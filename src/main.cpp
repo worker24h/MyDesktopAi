@@ -65,6 +65,9 @@ static void drawStatus() {
     }
 }
 
+/**
+ * 配置项目
+ */
 void setup() {
     M5.begin();
     Serial.begin(115200);
@@ -76,7 +79,7 @@ void setup() {
     }
 
     // 1. 存储：挂载 SD 卡，初始化数据目录 /data、/data/config、/data/logs
-    if (sd_mount()) {
+    if (sd_setup()) {
         sd_init_dirs();
     }
 
@@ -84,8 +87,7 @@ void setup() {
     logger.initialize();
     logger.info("main", "boot");
 
-    listNetworks();
-    
+
     // 3. WiFi：AP 始终开启；有 STA 配置就去连接路由器
     wifi_start_ap_sta(AP_SSID, AP_PASSWORD);
     WifiConfig wifiCfg;
@@ -104,6 +106,9 @@ void setup() {
     logger.info("main", "setup done");
 }
 
+/**
+ * 循环处理
+ */
 void loop() {
     M5.update();
     webfs_loop();

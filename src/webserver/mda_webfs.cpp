@@ -329,7 +329,7 @@ WebServer &webfs_server() {
 
 bool webfs_setup() {
   // SD 卡由 lib/storage 统一挂载，这里只确认状态
-  sdReady = sd_mount();
+  sdReady = sd_setup();
 
   server.on("/", HTTP_GET, handleList);
   server.on("/file", HTTP_GET, handleFile);

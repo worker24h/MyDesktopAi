@@ -6,10 +6,8 @@
 #define MDA_CONFIG_DIR "/data/config"
 #define MDA_LOG_DIR    "/data/logs"
 
-void sd_setup();
-
 // 挂载 SD 卡（CS=4，与屏幕共用 SPI 总线）。已挂载时直接返回 true。
-bool sd_mount();
+bool sd_setup();
 
 // SD 卡当前是否已挂载
 bool sd_is_mounted();

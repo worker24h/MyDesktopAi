@@ -10,11 +10,6 @@
 #define WIFI_PASSWORD "your-password"
 
 
-void network_setup();
-void printMacAddress();
-void listNetworks();
-void printEncryptionType(int thisType);
-
 // 连接 WiFi，最多等待 timeout_ms 毫秒。成功返回 true。
 // 连接成功后开启自动重连，断线时会自动重新连接。
 bool wifi_connect(const char *ssid, const char *password, uint32_t timeout_ms = 20000);

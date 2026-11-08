@@ -20,8 +20,10 @@ struct SDPdrvAccess : fs::SDFS {
 };
 
 
-
-void printDirectory(File dir, int numTabs) {
+/**
+ * 打印目录
+ */
+void print_directory(File dir, int numTabs) {
   while (true) {
     File entry =  dir.openNextFile();
     if (! entry) {
@@ -36,7 +38,7 @@ void printDirectory(File dir, int numTabs) {
     Serial.print(entry.name());
     if (entry.isDirectory()) {
       Serial.println("/");
-      printDirectory(entry, numTabs + 1);
+      print_directory(entry, numTabs + 1);
     } else {
       // files have sizes, directories do not
       Serial.print("\t\t");
@@ -44,24 +46,6 @@ void printDirectory(File dir, int numTabs) {
     }
     entry.close();
   }
-}
-
-
-void sd_setup() {
-  if (!SD.begin(SD_SPI_CS_PIN)) {
-    Serial.println("initialization failed. Things to check:");
-    Serial.println("1. is a card inserted?");
-    Serial.println("2. is your wiring correct?");
-    Serial.println("3. did you change the chipSelect pin to match your shield or module?");
-    Serial.println("Note: press reset or reopen this serial monitor after fixing your issue!");
-    while (true) {
-    }
-  }
-  Serial.println("initialization done.");
-  File root = SD.open("/");
-  printDirectory(root, 0);
-  root.close();
-  Serial.println("done!");
 }
 
 
@@ -120,7 +104,7 @@ bool sd_is_mounted() {
   return SDPdrvAccess::get(SD) != 0xFF;
 }
 
-bool sd_mount() {
+bool sd_setup() {
   if (sd_is_mounted()) {
     return true;
   }
