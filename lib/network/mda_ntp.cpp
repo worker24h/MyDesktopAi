@@ -86,16 +86,16 @@ void mda_ntp_loop() {
   bool connected = wifi_sta_get_status().state == WifiStaState::Connected;
   if (connected && !lastConnected) {
     logger.info("time", "STA connected, start NTP sync (%s)", NTP_SERVER1);
-    startSntp();
+    startSntp(); //发起ntp，时钟同步
   }
   lastConnected = connected;
 
   if (ntpSynced) {
     ntpSynced = false;
-    saveTimeToRtc();
-    char buf[32];
-    mda_time_format(buf, sizeof(buf));
-    logger.info("time", "NTP synced: %s, saved to RTC", buf);
+    saveTimeToRtc(); //将时间保存到RTC中
+    //char buf[32];
+    //mda_time_format(buf, sizeof(buf));
+    //logger.info("time", "NTP synced: %s, saved to RTC", buf);
   }
 }
 
