@@ -1,5 +1,5 @@
-#ifndef MDA_LOGGER_H
-#define MDA_LOGGER_H
+#ifndef MDA_NTP_H
+#define MDA_NTP_H
 
 void mda_ntp_initialize();
 

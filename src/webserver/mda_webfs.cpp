@@ -8,9 +8,6 @@
 #include "mda_sd_manager.h"
 #include "mda_logger.h"
 
-// CoreS3 microSD：CS=4，SPI 总线与屏幕共用（SCK=36, MISO=35, MOSI=37）
-static const uint8_t SD_CS_PIN = 4;
-static const uint32_t SD_SPI_FREQ = 25000000;
 
 static WebServer server(80);
 static bool sdReady = false;
@@ -212,7 +209,7 @@ static void handleList() {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
   server.send(200, "text/html; charset=utf-8", "");
   server.sendContent_P(PAGE_HEAD);
-  server.sendContent("<h1>CoreS3 SD 卡</h1><div class=\"path\">" + htmlEscape(path) + "</div><table>");
+  server.sendContent("<h1>CoreS3 SD 卡</h1><div class=\"path\"><a href=\"/wifi\">WiFi 设置</a> · " + htmlEscape(path) + "</div><table>");
 
   if (path != "/") {
     server.sendContent("<tr><td class=\"name\"><a href=\"/?path=" + urlEncode(parentPath(path)) +
@@ -307,6 +304,9 @@ static void handleFormat() {
   logger.suspend();
   bool ok = sd_format();
   sdReady = ok;
+  if (ok) {
+    sd_init_dirs();  // 格式化会清空目录，重新创建 /data、/data/config、/data/logs
+  }
   logger.resume();  // 重新创建 /data/logs 并打开日志文件
   logger.warn("webfs", "SD card formatted from web page, result=%s", ok ? "ok" : "failed");
 
@@ -323,14 +323,13 @@ static void handleNotFound() {
 
 // ---------- 对外接口 ----------
 
+WebServer &webfs_server() {
+  return server;
+}
+
 bool webfs_setup() {
-  SPI.begin(SCK, MISO, MOSI, SD_CS_PIN);
-  sdReady = SD.begin(SD_CS_PIN, SPI, SD_SPI_FREQ);
-  if (sdReady) {
-    Serial.printf("WebFS: SD mounted, %s total\n", formatSize(SD.totalBytes()).c_str());
-  } else {
-    Serial.println("WebFS: SD mount failed (没插卡或格式不是 FAT32/exFAT?)");
-  }
+  // SD 卡由 lib/storage 统一挂载，这里只确认状态
+  sdReady = sd_mount();
 
   server.on("/", HTTP_GET, handleList);
   server.on("/file", HTTP_GET, handleFile);

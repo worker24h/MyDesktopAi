@@ -1,3 +1,4 @@
+#include "mda_sd_manager.h"
 
 #include <Arduino.h>
 #include <SPI.h>
@@ -113,4 +114,42 @@ bool sd_format() {
   Serial.printf("SD format: remounted, %.2f GB free\n",
                 (double)(SD.totalBytes() - SD.usedBytes()) / 1024 / 1024 / 1024);
   return true;
+}
+
+bool sd_is_mounted() {
+  return SDPdrvAccess::get(SD) != 0xFF;
+}
+
+bool sd_mount() {
+  if (sd_is_mounted()) {
+    return true;
+  }
+  SPI.begin(SD_SPI_SCK_PIN, SD_SPI_MISO_PIN, SD_SPI_MOSI_PIN, SD_SPI_CS_PIN);
+  if (!SD.begin(SD_SPI_CS_PIN, SPI, SD_SPI_FREQ)) {
+    Serial.println("SD: mount failed (没插卡或格式不是 FAT32?)");
+    return false;
+  }
+  Serial.printf("SD: mounted, %.2f GB total\n", (double)SD.totalBytes() / 1024 / 1024 / 1024);
+  return true;
+}
+
+bool sd_init_dirs() {
+  if (!sd_is_mounted()) {
+    return false;
+  }
+  // 按层级顺序创建，父目录在前
+  static const char *const dirs[] = {MDA_DATA_DIR, MDA_CONFIG_DIR, MDA_LOG_DIR};
+  bool ok = true;
+  for (const char *dir : dirs) {
+    if (SD.exists(dir)) {
+      continue;
+    }
+    if (SD.mkdir(dir)) {
+      Serial.printf("SD: created %s\n", dir);
+    } else {
+      Serial.printf("SD: mkdir %s failed\n", dir);
+      ok = false;
+    }
+  }
+  return ok;
 }
