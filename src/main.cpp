@@ -7,20 +7,38 @@
 #include "webserver/mda_web_wifi.h"
 #include "config/mda_wifi_config.h"
 #include "mda_logger.h"
+#include "mda_ntp.h"
 
 // CoreS3 自己开的 WiFi 热点（管理入口）。密码至少 8 位，请改成你自己的。
 static const char *AP_SSID = "CoreS3-SD";
 static const char *AP_PASSWORD = "cores3sd";
+
+// 屏幕最上方一行显示时间，每秒刷新。只重画这一行，不会整屏闪烁
+static const int CLOCK_HEIGHT = 16;  // 字号 2 时一行高 16 像素
+
+static void drawClock() {
+    char text[32];
+    if (!mda_time_format(text, sizeof(text))) {
+        snprintf(text, sizeof(text), "time not synced");
+    }
+    // 补空格到固定宽度，并带背景色绘制，直接覆盖上一次的内容，不需要先清屏
+    char line[32];
+    snprintf(line, sizeof(line), "%-9s", text);
+    M5.Display.setTextSize(2);
+    M5.Display.setTextColor(TFT_WHITE, TFT_BLACK);
+    M5.Display.setCursor(0, 0);
+    M5.Display.print(line);
+}
 
 // 屏幕上显示 AP 和 STA 的状态，STA 状态变化时重画
 static void drawStatus() {
     WifiStaStatus st = wifi_sta_get_status();
 
     M5.Display.fillScreen(TFT_BLACK);
-    M5.Display.setCursor(0, 0);
+    drawClock();
+    M5.Display.setCursor(0, CLOCK_HEIGHT + 8);
     M5.Display.setTextSize(2);
-    M5.Display.println("MyDesktopAi");
-    M5.Display.println();
+    //M5.Display.println("MyDesktopAi");
 
     M5.Display.println("[AP]");
     M5.Display.printf("SSID: %s\n", AP_SSID);
@@ -87,6 +105,9 @@ void setup() {
     logger.initialize();
     logger.info("main", "boot");
 
+    // 时间：RTC → 系统时间，设置时区（UTC+8）；STA 连上后会自动 NTP 对时
+    mda_ntp_initialize();
+
 
     // 3. WiFi：AP 始终开启；有 STA 配置就去连接路由器
     wifi_start_ap_sta(AP_SSID, AP_PASSWORD);
@@ -113,6 +134,15 @@ void loop() {
     M5.update();
     webfs_loop();
     wifi_sta_loop();
+    mda_ntp_loop();
+
+    // 每秒刷新一次时间
+    static time_t lastSecond = 0;
+    time_t nowSecond = time(nullptr);
+    if (nowSecond != lastSecond) {
+        lastSecond = nowSecond;
+        drawClock();
+    }
 
     // STA 状态或 IP 变化时刷新屏幕
     static WifiStaState lastState = WifiStaState::NotConfigured;

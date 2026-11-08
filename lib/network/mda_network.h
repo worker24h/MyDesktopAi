@@ -10,14 +10,6 @@
 #define WIFI_PASSWORD "your-password"
 
 
-// 连接 WiFi，最多等待 timeout_ms 毫秒。成功返回 true。
-// 连接成功后开启自动重连，断线时会自动重新连接。
-bool wifi_connect(const char *ssid, const char *password, uint32_t timeout_ms = 20000);
-
-// 让 CoreS3 自己开一个 WiFi 热点（AP 模式），设备 IP 固定为 192.168.4.1。
-// password 至少 8 位（WPA2）；传 nullptr 或 "" 则为无密码热点。成功返回 true。
-bool wifi_start_ap(const char *ssid, const char *password);
-
 // ---------------- AP + STA 并存 ----------------
 // AP：始终开启的热点，作为管理入口（192.168.4.1）。
 // STA：用配置去连接路由器，连不上或断线时自动重试，不影响 AP。
@@ -43,7 +35,10 @@ struct WifiStaStatus {
   uint8_t maxAttempts;  // 最多尝试次数
 };
 
-// 以 AP+STA 模式启动 WiFi 并开启热点。成功返回 true。
+// ---------------- AP + STA 并存 ----------------
+// AP：始终开启的热点，作为管理入口（192.168.4.1）。
+// STA：用配置去连接路由器，连不上或断线时自动重试，不影响 AP。
+// 注意：芯片只有一套射频，STA 连上路由器后 AP 会切到路由器的信道，热点上的设备可能短暂断开重连。
 bool wifi_start_ap_sta(const char *apSsid, const char *apPassword);
 
 // 用新配置连接路由器（不阻塞，立即返回）。ssid 为空则断开 STA 并清除配置。password 为空表示 Open 网络。

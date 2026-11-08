@@ -1,103 +1,7 @@
-#include "mda_network.h"
 
 #include <WiFi.h>
-
+#include "mda_network.h"
 #include "mda_logger.h"
-
-static const char *wifiStatusName(wl_status_t status) {
-  switch (status) {
-    case WL_IDLE_STATUS:
-      return "WL_IDLE_STATUS";
-    case WL_NO_SSID_AVAIL:
-      return "WL_NO_SSID_AVAIL";
-    case WL_SCAN_COMPLETED:
-      return "WL_SCAN_COMPLETED";
-    case WL_CONNECTED:
-      return "WL_CONNECTED";
-    case WL_CONNECT_FAILED:
-      return "WL_CONNECT_FAILED";
-    case WL_CONNECTION_LOST:
-      return "WL_CONNECTION_LOST";
-    case WL_DISCONNECTED:
-      return "WL_DISCONNECTED";
-    case WL_STOPPED:
-      return "WL_STOPPED";
-    case WL_NO_SHIELD:
-      return "WL_NO_SHIELD";
-    default:
-      return "UNKNOWN";
-  }
-}
-
-// 打印连接、断开、拿到 IP 等事件，断开时打印原因（密码错误、找不到网络等）
-static void onWiFiEvent(arduino_event_id_t event, arduino_event_info_t info) {
-  switch (event) {
-    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
-      Serial.println("WiFi: associated with AP");
-      break;
-    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-      Serial.print("WiFi: got IP ");
-      Serial.println(WiFi.localIP());
-      break;
-    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED: {
-      uint8_t reason = info.wifi_sta_disconnected.reason;
-      Serial.printf("WiFi: disconnected, reason %u (%s)\n", reason,
-                    WiFi.disconnectReasonName((wifi_err_reason_t)reason));
-      break;
-    }
-    default:
-      break;
-  }
-}
-
-bool wifi_connect(const char *ssid, const char *password, uint32_t timeout_ms) {
-  static bool eventRegistered = false;
-  if (!eventRegistered) {
-    WiFi.onEvent(onWiFiEvent);
-    eventRegistered = true;
-  }
-
-  WiFi.mode(WIFI_STA);
-  WiFi.setAutoReconnect(true);
-  Serial.printf("WiFi: connecting to \"%s\" ...\n", ssid);
-  WiFi.begin(ssid, password);
-
-  uint32_t start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < timeout_ms) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println();
-
-  wl_status_t status = WiFi.status();
-  if (status != WL_CONNECTED) {
-    Serial.printf("WiFi: connect failed, status %d (%s)\n", status, wifiStatusName(status));
-    return false;
-  }
-
-  Serial.print("WiFi: connected, IP ");
-  Serial.print(WiFi.localIP());
-  Serial.printf(", RSSI %d dBm\n", WiFi.RSSI());
-  return true;
-}
-
-bool wifi_start_ap(const char *ssid, const char *password) {
-  if (password && password[0] != '\0' && strlen(password) < 8) {
-    Serial.println("WiFi AP: password must be at least 8 characters");
-    return false;
-  }
-  WiFi.mode(WIFI_AP);
-  bool ok = WiFi.softAP(ssid, (password && password[0]) ? password : nullptr);
-  if (!ok) {
-    Serial.println("WiFi AP: softAP failed");
-    return false;
-  }
-  Serial.printf("WiFi AP: \"%s\" started, IP ", ssid);
-  Serial.println(WiFi.softAPIP());
-  return true;
-}
-
-// ---------------- AP + STA 并存 ----------------
 
 static const uint32_t STA_RETRY_INTERVAL_MS = 15000;  // 失败后多久重试一次
 static const uint8_t STA_MAX_ATTEMPTS = 3;             // 连续失败这么多次后停止重试
@@ -112,7 +16,7 @@ static volatile uint32_t staFailedAt = 0;
 static volatile uint8_t staAttempts = 0;
 
 // WiFi 事件在 WiFi 系统任务里回调，只更新简单的状态变量；日志类是线程安全的
-static void onApStaEvent(arduino_event_id_t event, arduino_event_info_t info) {
+static void on_ap_sta_event(arduino_event_id_t event, arduino_event_info_t info) {
   switch (event) {
     case ARDUINO_EVENT_WIFI_STA_GOT_IP: {
       staState = WifiStaState::Connected;
@@ -160,7 +64,7 @@ static void onApStaEvent(arduino_event_id_t event, arduino_event_info_t info) {
   }
 }
 
-static void staBegin() {
+static void sta_begin() {
   staAttempts = staAttempts + 1;
   staState = WifiStaState::Connecting;
   logger.info("wifi", "STA connecting to \"%s\" (%s), attempt %u/%u", staSsid.c_str(),
@@ -180,7 +84,7 @@ bool wifi_start_ap_sta(const char *apSsid, const char *apPassword) {
 
   static bool eventRegistered = false;
   if (!eventRegistered) {
-    WiFi.onEvent(onApStaEvent); //注册回掉地址
+    WiFi.onEvent(on_ap_sta_event); //注册回掉地址
     eventRegistered = true;
   }
 
@@ -214,7 +118,7 @@ void wifi_sta_connect(const char *ssid, const char *password) {
     logger.info("wifi", "STA config cleared");
     return;
   }
-  staBegin();
+  sta_begin();
 }
 
 void wifi_sta_loop() {
@@ -230,7 +134,7 @@ void wifi_sta_loop() {
   if (millis() - staFailedAt < STA_RETRY_INTERVAL_MS) {
     return;
   }
-  staBegin();
+  sta_begin();
 }
 
 WifiStaStatus wifi_sta_get_status() {
