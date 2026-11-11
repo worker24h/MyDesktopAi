@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CoreS3 小伙伴 UI</title>
+<style>
+:root{
+  --ink:#2a2f4a; --ink-2:#6b7194; --line:rgba(120,130,190,.2);
+  --blue:#3d8bff; --pink:#ff5b97; --green:#26b773; --violet:#8b7cff;
+  --card:rgba(255,255,255,.72); --card-strong:rgba(255,255,255,.9);
+  --shadow:0 4px 12px rgba(110,100,200,.16);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  font-family:-apple-system,"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",system-ui,sans-serif;color:var(--ink);min-height:100vh;
+  background:radial-gradient(1000px 600px at 0% 0%,#ffe3f1 0,transparent 60%),radial-gradient(900px 600px at 100% 100%,#dfe6ff 0,transparent 60%),#f6efff;
+  display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:28px;padding:28px;align-items:start;
+}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------------- 外层页面 ---------------- */
+.stage{display:flex;flex-direction:column;align-items:center}
+.stage header{width:100%;max-width:760px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--ink-2);font-size:14px;margin:0 0 22px;line-height:1.6}
+.device{position:relative;padding:58px 44px 54px;border-radius:34px;
+  background:linear-gradient(150deg,#4a4f5a 0%,#2c3038 45%,#1e2127 100%);
+  box-shadow:0 30px 70px rgba(40,30,90,.35),inset 0 2px 0 rgba(255,255,255,.15),inset 0 -3px 0 rgba(0,0,0,.4)}
+.cam{position:absolute;top:22px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center}
+.cam i{display:block;border-radius:50%}
+.cam .lens{width:16px;height:16px;background:radial-gradient(circle at 35% 35%,#5a6a9a,#0b0d14 60%);box-shadow:0 0 0 3px #15171c}
+.cam .prox{width:7px;height:7px;background:#3a1010;box-shadow:0 0 0 2px #15171c}
+.bezel{padding:14px;border-radius:12px;background:#06070a;box-shadow:0 0 0 2px #3b3f48}
+.viewport{position:relative;overflow:hidden;border-radius:2px}
+.usb{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:44px;height:10px;border-radius:0 0 6px 6px;background:#15171c}
+.caption{margin-top:18px;font-size:13px;color:var(--ink-2);text-align:center;line-height:1.8}
+.caption b{color:var(--ink)}
+
+/* ---------------- 320×240 屏幕 ---------------- */
+.lcd{position:absolute;left:0;top:0;width:320px;height:240px;overflow:hidden;transform-origin:0 0;font-size:12px;user-select:none;-webkit-user-select:none;
+  background:linear-gradient(160deg,#cfe0ff 0%,#e6dcff 50%,#ffe2ef 100%)}
+.lcd::before{content:"";position:absolute;width:220px;height:80px;left:-50px;top:150px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.85),transparent);pointer-events:none}
+.lcd::after{content:"";position:absolute;width:200px;height:70px;right:-60px;top:100px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.7),transparent);pointer-events:none}
+
+.sbar{position:absolute;z-index:20;top:0;left:0;right:0;height:22px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:11px}
+.sbar .l{display:flex;align-items:center;gap:6px}
+.sbar .r{display:flex;align-items:center;gap:5px}
+.sbar svg.i{width:13px;height:13px}
+.backbtn{width:22px;height:18px;border-radius:9px;background:var(--card-strong);display:none;place-items:center;box-shadow:var(--shadow)}
+.backbtn svg.i{width:13px;height:13px;stroke-width:2.6}
+.lcd.sub .backbtn{display:grid}
+.ptitle{font-size:11px;display:none}
+.lcd.sub .ptitle{display:inline}
+.batt{width:20px;height:10px;border:1.5px solid var(--ink);border-radius:3px;position:relative;padding:1px}
+.batt i{display:block;height:100%;background:#36c98a;border-radius:1px}
+.batt.low i{background:#ff4d6d}
+.batt::after{content:"";position:absolute;right:-4px;top:2px;width:2px;height:3px;background:var(--ink);border-radius:1px}
+
+.page{position:absolute;inset:22px 0 0;padding:4px 8px 8px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;transform:translateX(10px);z-index:1}
+.page.active{opacity:1;pointer-events:auto;transform:none;z-index:2}
+.cardx{background:var(--card);border:1px solid rgba(255,255,255,.95);border-radius:14px;box-shadow:var(--shadow)}
+
+/* robot */
+.robot{display:block;margin:0 auto;overflow:visible;filter:drop-shadow(0 6px 8px rgba(80,90,180,.22))}
+.robot .arm-r{transform-origin:132px 138px}
+.bob{animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-4px)}}
+.waving .arm-r{animation:wave 1.4s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(-70deg)}}
+.robot .eyes{animation:blink 4.5s infinite;transform-origin:100px 88px}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+.robot .talk-mouth{animation:talk .25s ease-in-out infinite alternate;transform-origin:100px 106px}
+@keyframes talk{to{transform:scaleY(.3)}}
+.robot .float{animation:floaty 2.4s ease-in-out infinite}
+@keyframes floaty{50%{transform:translateY(-6px);opacity:.6}}
+.shake{animation:shake .12s linear 6}
+@keyframes shake{25%{transform:translateX(-4px) rotate(-3deg)}75%{transform:translateX(4px) rotate(3deg)}}
+
+.bubble{position:relative;padding:6px 10px;border-radius:12px;background:var(--card-strong);text-align:center;line-height:1.45;font-size:11.5px;font-weight:600;box-shadow:var(--shadow);transition:opacity .2s}
+.bubble::after{content:"";position:absolute;bottom:-5px;left:50%;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:var(--card-strong)}
+
+/* nav */
+.nav{position:absolute;left:8px;right:8px;bottom:6px;height:34px;border-radius:14px;display:flex;justify-content:space-around;align-items:center;z-index:5}
+.nav button{width:44px;height:28px;border-radius:10px;display:grid;place-items:center;color:#6f7598}
+.nav button svg.i{width:19px;height:19px}
+.nav button.on{color:var(--pink)}
+
+/* 首页 */
+.home-l{position:absolute;left:6px;top:4px;width:146px;display:flex;flex-direction:column;align-items:center}
+.home-l .bubble{max-width:142px}
+.home-l .bob{margin-top:2px;cursor:pointer}
+.tiles{position:absolute;right:8px;top:8px;width:154px;display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tile{height:62px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:600;font-size:11px;
+  box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.95);transition:transform .12s}
+.tile:active{transform:scale(.94)}
+.tile .ic{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;color:#fff}
+.tile .ic svg.i{width:17px;height:17px}
+.t-pink{background:#ffd6e7}.t-pink .ic{background:linear-gradient(160deg,#ff8fbd,#ff5b97)}
+.t-blue{background:#d9e8ff}.t-blue .ic{background:linear-gradient(160deg,#7cc0ff,#3d8bff)}
+.t-green{background:#d4f6e0}.t-green .ic{background:linear-gradient(160deg,#6fe0a2,#26b773)}
+.t-violet{background:#e6e1ff}.t-violet .ic{background:linear-gradient(160deg,#b7a9ff,#8b7cff)}
+
+/* 陪伴 */
+.mus-l{position:absolute;left:4px;top:2px;width:124px}
+.notes span{position:absolute;font-size:15px;animation:note 3s ease-in-out infinite}
+@keyframes note{50%{transform:translateY(-6px) rotate(8deg)}}
+.paused .notes span{animation-play-state:paused;opacity:.35}
+.player{position:absolute;left:128px;right:8px;top:4px;padding:8px 10px}
+.player .row{display:flex;gap:8px;align-items:center}
+.cover{width:46px;height:46px;border-radius:10px;display:grid;place-items:center;font-size:24px;flex:none}
+.meta{min-width:0;flex:1}
+.meta h3{margin:0 0 2px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta p{margin:0;color:var(--ink-2);font-size:10.5px}
+.bar{height:5px;border-radius:5px;background:#e6e4f3;margin:9px 0 3px;position:relative;cursor:pointer}
+.bar::before{content:"";position:absolute;inset:-8px 0}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:linear-gradient(90deg,#ff8fbd,#ff5b97)}
+.time{text-align:right;font-size:10px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.ctrls{display:flex;justify-content:center;align-items:center;gap:26px;margin-top:2px}
+.ctrls .sm svg.i{width:18px;height:18px}
+.play{width:38px;height:38px;border-radius:50%;background:linear-gradient(160deg,#ff8fbd,#ff4f8f);color:#fff;display:grid;place-items:center;box-shadow:0 4px 10px rgba(255,80,140,.4)}
+.play svg.i{width:18px;height:18px}
+.cats{position:absolute;left:8px;right:8px;bottom:6px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cat{height:34px;border-radius:12px;background:var(--card);border:1px solid #fff;display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:600}
+.cat .ic{width:20px;height:20px;border-radius:7px;display:grid;place-items:center;color:#fff;background:linear-gradient(160deg,#7cc0ff,#3d8bff)}
+.cat .ic svg.i{width:12px;height:12px}
+.cat.on{background:#fff;box-shadow:var(--shadow)}
+.cat.on .ic{background:linear-gradient(160deg,#ff8fbd,#ff5b97)}
+
+/* AI 助手 */
+.chat-l{position:absolute;left:4px;top:2px;width:118px;display:flex;flex-direction:column;align-items:center}
+.chat-l .bubble{font-size:10.5px;padding:5px 8px}
+.msgs{position:absolute;left:124px;right:8px;top:4px;bottom:50px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;scrollbar-width:none}
+.msgs::-webkit-scrollbar{display:none}
+.msg{max-width:92%;padding:6px 9px;border-radius:12px;line-height:1.45;font-size:11px;box-shadow:var(--shadow);animation:pop .25s}
+@keyframes pop{from{opacity:0;transform:translateY(5px)}}
+.msg.u{align-self:flex-end;background:#fff;border-bottom-right-radius:4px}
+.msg.b{align-self:flex-start;background:#dcf6e5;border-bottom-left-radius:4px}
+.typing i{display:inline-block;width:4px;height:4px;border-radius:50%;background:#5aa97a;margin:0 1.5px;animation:dot 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes dot{50%{transform:translateY(-3px);opacity:.4}}
+.holdbar{position:absolute;left:8px;right:8px;bottom:6px;height:38px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:12px;touch-action:none}
+.holdbar .mic{width:28px;height:28px;border-radius:50%;background:linear-gradient(160deg,#7cc0ff,#3d8bff);color:#fff;display:grid;place-items:center;transition:.2s}
+.holdbar .mic svg.i{width:15px;height:15px}
+.holdbar.rec{background:#d9e8ff}
+.holdbar.rec .mic{box-shadow:0 0 0 5px rgba(61,139,255,.18),0 0 0 10px rgba(61,139,255,.08)}
+.wave{display:none;gap:2px;align-items:center;height:16px}
+.wave i{width:3px;border-radius:2px;background:var(--blue);animation:wv .6s ease-in-out infinite alternate}
+.holdbar.rec .wave{display:flex}
+@keyframes wv{from{height:3px}to{height:16px}}
+
+/* 控制 */
+.ctl-l{position:absolute;left:2px;top:6px;width:104px}
+.ctl-wrap{transition:transform .3s ease}
+.pad{position:absolute;left:108px;top:8px;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,#fff,#eceeff);box-shadow:var(--shadow),inset 0 0 0 1px #fff}
+.pad button{position:absolute;width:40px;height:40px;border-radius:50%;background:#fff;color:var(--blue);display:grid;place-items:center;box-shadow:0 3px 8px rgba(80,110,200,.2);transition:transform .1s}
+.pad button:active{transform:scale(.9);background:#eaf3ff}
+.pad button svg.i{stroke-width:3}
+.pad .u{left:46px;top:4px}.pad .d{left:46px;bottom:4px}.pad .l{left:4px;top:46px}.pad .r{right:4px;top:46px}
+.pad .c{left:48px;top:48px;width:36px;height:36px;background:radial-gradient(circle at 35% 30%,#8fd0ff,#2f7cf6);box-shadow:0 3px 10px rgba(47,124,246,.45)}
+.ctl-r{position:absolute;right:8px;top:8px;width:66px;display:grid;gap:6px}
+.stat{padding:5px 0;text-align:center}
+.stat small{display:block;color:var(--ink-2);font-size:9.5px;font-weight:600}
+.stat b{font-size:18px;font-variant-numeric:tabular-nums}
+.stat.mini b{font-size:13px}
+.ctl-btns{position:absolute;left:8px;right:8px;bottom:6px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.btn2{height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:5px;font-weight:600;font-size:11px}
+.btn2 svg.i{width:14px;height:14px}
+.btn2.on{background:linear-gradient(160deg,#7cc0ff,#3d8bff);color:#fff}
+.btn2 .sq{width:10px;height:10px;border-radius:3px;background:#ff6b8a}
+
+/* 设备 */
+.tabs{display:flex;padding:3px;border-radius:12px;gap:3px}
+.tabs button{flex:1;height:22px;border-radius:9px;font-size:11px;font-weight:600;color:var(--ink-2)}
+.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 2px 6px rgba(110,100,200,.15)}
+.tb{display:none;margin-top:6px}
+.tb.on{display:block}
+.sensors{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sensor{padding:5px 2px;text-align:center}
+.sensor .ic{font-size:14px;line-height:16px}
+.sensor small{display:block;color:var(--ink-2);font-size:9.5px}
+.sensor b{font-size:15px;font-variant-numeric:tabular-nums}
+.sensor b em{font-size:9px;font-style:normal;margin-left:1px}
+.chart{margin-top:6px;height:80px;padding:6px 8px;display:flex;flex-direction:column}
+.chart h4{margin:0 0 2px;font-size:10.5px;display:flex;justify-content:space-between}
+.chart h4 span{color:var(--ink-2);font-weight:500}
+.chart svg{flex:1;width:100%}
+.camv{position:relative;height:150px;border-radius:12px;overflow:hidden;background:radial-gradient(120% 80% at 40% 70%,#d9a26c 0,#a8714a 30%,#6d4a36 60%,#3d2c24 100%)}
+.camv .subject{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);font-size:64px;animation:breathe 3s ease-in-out infinite}
+@keyframes breathe{50%{transform:translate(-50%,-50%) scale(1.03)}}
+.camv .blanket{position:absolute;left:-10%;right:-10%;bottom:-24px;height:70px;border-radius:50%;background:#7d818a}
+.camv .hud{position:absolute;left:8px;right:8px;top:6px;display:flex;justify-content:space-between;color:#fff;font-size:9.5px;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.camv .rec{display:flex;align-items:center;gap:4px}
+.camv .rec i{width:6px;height:6px;border-radius:50%;background:#ff4d6d;animation:blinkr 1s infinite}
+@keyframes blinkr{50%{opacity:.2}}
+.camv .box{position:absolute;left:30%;top:28%;width:40%;height:46%;border:1.5px solid #7cf0b0;border-radius:6px}
+.camv .box span{position:absolute;top:-15px;left:-2px;background:#7cf0b0;color:#123;font-size:9px;padding:1px 4px;border-radius:4px;font-weight:700}
+.camv .tools{position:absolute;right:6px;bottom:6px;display:flex;gap:5px}
+.camv .tools button{height:26px;padding:0 9px;border-radius:13px;background:rgba(255,255,255,.88);font-size:10.5px;font-weight:600;display:flex;align-items:center;gap:3px}
+.camv .tools svg.i{width:12px;height:12px}
+.camv .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.camv .flash.go{animation:flash .5s}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+.netl{padding:2px 10px}
+.netl div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:11px}
+.netl div:last-child{border:0}
+.netl span{color:var(--ink-2)}
+
+/* 设置 */
+.prof{position:absolute;left:8px;top:6px;width:100px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.avatar{width:70px;height:70px;border-radius:50%;background:radial-gradient(circle at 50% 40%,#fff,#dcecff);border:2px solid #fff;box-shadow:var(--shadow);display:grid;place-items:center;overflow:hidden}
+.prof h3{margin:6px 0 1px;font-size:13px}
+.prof p{margin:0;font-size:10px;color:var(--ink-2)}
+.prof .edit{margin-top:6px;height:22px;padding:0 10px;border-radius:11px;background:var(--card-strong);font-size:10px;font-weight:600;box-shadow:var(--shadow);display:flex;align-items:center;gap:3px}
+.prof .edit svg.i{width:11px;height:11px}
+.slist{position:absolute;left:114px;right:8px;top:4px;bottom:46px;padding:0 10px;overflow-y:auto;scrollbar-width:none}
+.slist::-webkit-scrollbar{display:none}
+.srow{display:flex;align-items:center;gap:8px;height:33px;border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;width:100%;text-align:left}
+.srow:last-child{border:0}
+.srow .ic{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:none;font-size:12px}
+.srow .ic svg.i{width:12px;height:12px}
+.srow .chev{margin-left:auto;color:#9aa0bf}
+.srow .chev svg.i{width:13px;height:13px}
+.srow input[type=range]{margin-left:auto;width:72px;accent-color:var(--violet)}
+.srow .v{width:20px;text-align:right;font-size:10px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+/* 表情 */
+.egrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.egrid button{border-radius:12px;padding:3px 0 4px;background:var(--card);border:1px solid #fff;font-size:10px;font-weight:600}
+.egrid button.on{background:#fff;box-shadow:0 0 0 1.5px var(--violet),var(--shadow)}
+
+/* 待机全屏 */
+.p-idle{padding:0;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#cfe0ff 0%,#e6dcff 50%,#ffe2ef 100%)}
+.p-idle.active{z-index:30}
+.p-idle .clockbig{position:absolute;top:8px;left:12px;font-size:20px;font-weight:800;color:rgba(42,47,74,.55)}
+.p-idle .hint{position:absolute;bottom:8px;width:100%;text-align:center;font-size:10px;color:var(--ink-2)}
+
+.toast{position:absolute;left:50%;top:28px;transform:translate(-50%,-8px);background:rgba(42,47,74,.88);color:#fff;padding:4px 12px;border-radius:999px;font-size:11px;opacity:0;transition:.25s;z-index:50;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------------- 右侧面板 ---------------- */
+.panel{display:grid;gap:14px;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto}
+.card{background:rgba(255,255,255,.75);border:1px solid #fff;border-radius:18px;padding:14px 16px;box-shadow:0 8px 24px rgba(110,100,200,.1)}
+.card h3{margin:0 0 10px;font-size:14px;display:flex;justify-content:space-between;align-items:center}
+.card h3 small{font-weight:500;color:var(--ink-2);font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px;transition:.15s}
+.btn:hover{border-color:var(--violet)}
+.btn.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.btn.hold.active{background:var(--pink);border-color:var(--pink);color:#fff}
+label.sl{display:grid;grid-template-columns:42px 1fr 46px;gap:8px;align-items:center;font-size:13px;margin:8px 0 0}
+label.sl span:last-child{text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:var(--violet)}
+.log{font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:170px;overflow:auto;background:#1b1f33;color:#cfd6ff;border-radius:12px;padding:8px 10px}
+.log div{white-space:pre-wrap;word-break:break-all}
+.log .in{color:#ffd27a}.log .out{color:#8ff0c0}.log .ev{color:#b9b3ff}
+.notes-list{margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:var(--ink-2)}
+.notes-list b{color:var(--ink)}
+
+@media (max-width:1080px){ body{grid-template-columns:1fr;padding:16px} .panel{position:static;max-height:none} }
+@media (max-width:520px){ .device{padding:44px 14px 34px;border-radius:24px} .bezel{padding:8px} }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gHead" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e3e9f8"/></linearGradient>
+    <linearGradient id="gBlue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fd0ff"/><stop offset="1" stop-color="#2f7cf6"/></linearGradient>
+    <radialGradient id="gVisor" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#2a3150"/><stop offset="1" stop-color="#0b0f1f"/></radialGradient>
+    <radialGradient id="gEye" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#7fd6ff"/><stop offset="1" stop-color="#2468e8"/></radialGradient>
+  </defs>
+</svg>
+
+<div class="stage">
+  <header>
+    <h1>CoreS3 小伙伴 UI</h1>
+    <p class="sub">把手机版的界面改成适合 CoreS3 的 320×240 横屏布局：配色、卡片、3D 机器人和交互都和手机版一致，按触屏尺寸重新排版。</p>
+  </header>
+  <div class="device">
+    <div class="cam"><i class="lens"></i><i class="prox"></i></div>
+    <div class="bezel"><div class="viewport" id="viewport">
+    <div class="lcd" id="lcd">
+      <div class="sbar">
+        <span class="l"><button class="backbtn" id="backBtn" data-icon="back" aria-label="返回"></button><span class="ptitle" id="ptitle"></span><span class="clock" id="clock">14:25</span></span>
+        <span class="r"><span data-icon="wifi"></span><span class="batt" id="batt"><i style="width:78%"></i></span></span>
+      </div>
+      <div class="toast" id="toast"></div>
+
+      <!-- 1 首页 -->
+      <section class="page active" data-page="home">
+        <div class="home-l">
+          <div class="bubble" id="homeBubble">你好呀！<br>今天想和我玩什么？😊</div>
+          <div class="bob" id="homeBob" title="点我进入待机"><div id="homeRobot" class="waving"></div></div>
+        </div>
+        <div class="tiles">
+          <button class="tile t-pink" data-go="music"><span class="ic" data-icon="music"></span>唱歌故事</button>
+          <button class="tile t-blue" data-go="chat"><span class="ic" data-icon="chat"></span>AI 聊天</button>
+          <button class="tile t-green" data-go="control"><span class="ic" data-icon="bot"></span>机器人控制</button>
+          <button class="tile t-violet" data-go="device"><span class="ic" data-icon="case"></span>设备管理</button>
+        </div>
+        <nav class="nav cardx" data-nav></nav>
+      </section>
+
+      <!-- 2 陪伴 -->
+      <section class="page paused" data-page="music">
+        <div class="mus-l">
+          <div class="notes"><span style="left:6px;top:18px;color:#c37bff">♪</span><span style="left:0;top:80px;color:#ffb12b;animation-delay:-.8s">♫</span>
+            <span style="right:8px;top:12px;color:#ff7a59;animation-delay:-1.5s">♪</span><span style="right:0;top:86px;color:#2fc6a0;animation-delay:-2.2s">♫</span></div>
+          <div class="bob"><div id="musicRobot"></div></div>
+        </div>
+        <div class="player cardx">
+          <div class="row"><div class="cover" id="cover">🏰</div>
+            <div class="meta"><h3 id="trTitle">小王子</h3><p id="trSub">星星的故事…</p></div></div>
+          <div class="bar" id="bar"><i id="barFill"></i></div>
+          <div class="time"><span id="tCur">01:24</span> / <span id="tDur">06:30</span></div>
+          <div class="ctrls">
+            <button class="sm" id="prevBtn" data-icon="prev"></button>
+            <button class="play" id="playBtn"></button>
+            <button class="sm" id="nextBtn" data-icon="next"></button>
+          </div>
+        </div>
+        <div class="cats" id="cats"></div>
+      </section>
+
+      <!-- 3 AI 助手 -->
+      <section class="page" data-page="chat">
+        <div class="chat-l">
+          <div class="bubble" id="chatBubble">有什么问题<br>都可以问我哦～</div>
+          <div id="chatRobot"></div>
+        </div>
+        <div class="msgs" id="msgs"></div>
+        <div class="holdbar cardx" id="holdBtn"><span class="mic" data-icon="mic"></span><span id="holdTxt">按住说话</span>
+          <span class="wave"><i></i><i style="animation-delay:-.2s"></i><i style="animation-delay:-.4s"></i><i style="animation-delay:-.1s"></i><i style="animation-delay:-.3s"></i></span></div>
+      </section>
+
+      <!-- 4 控制 -->
+      <section class="page" data-page="control">
+        <div class="ctl-l"><div class="ctl-wrap" id="ctlWrap"><div id="ctlRobot"></div></div></div>
+        <div class="pad">
+          <button class="u" data-dir="up" data-icon="up"></button>
+          <button class="l" data-dir="left" data-icon="left"></button>
+          <button class="c" data-dir="center" aria-label="复位"></button>
+          <button class="r" data-dir="right" data-icon="right"></button>
+          <button class="d" data-dir="down" data-icon="down"></button>
+        </div>
+        <div class="ctl-r">
+          <div class="stat cardx"><small>角度</small><b id="angleV">90°</b></div>
+          <div class="stat cardx mini"><small>俯仰</small><b id="pitchV">0°</b></div>
+        </div>
+        <div class="ctl-btns">
+          <button class="btn2 cardx" id="followBtn"><span data-icon="target"></span>自动跟随</button>
+          <button class="btn2 cardx" id="rangeBtn"><span data-icon="arm"></span>工作范围</button>
+          <button class="btn2 cardx" id="stopBtn"><span class="sq"></span>停止</button>
+        </div>
+      </section>
+
+      <!-- 5 设备 -->
+      <section class="page" data-page="device">
+        <div class="tabs cardx" id="tabs"><button class="on" data-tab="sensor">传感器</button><button data-tab="camera">摄像头</button><button data-tab="net">网络</button></div>
+        <div class="tb on" data-body="sensor">
+          <div class="sensors">
+            <div class="sensor cardx"><div class="ic">🌡️</div><small>温度</small><b><span id="sTemp">26.5</span><em>°C</em></b></div>
+            <div class="sensor cardx"><div class="ic">💧</div><small>湿度</small><b><span id="sHum">62</span><em>%</em></b></div>
+            <div class="sensor cardx"><div class="ic">☀️</div><small>光照</small><b><span id="sLux">120</span><em>lx</em></b></div>
+          </div>
+          <div class="chart cardx"><h4>温度趋势 <span>最近 60 秒</span></h4><svg id="chart" viewBox="0 0 300 60" preserveAspectRatio="none"></svg></div>
+        </div>
+        <div class="tb" data-body="camera">
+          <div class="camv" id="camv">
+            <div class="blanket"></div><div class="subject">🐈</div>
+            <div class="box" id="camBox"><span>猫咪 · 96%</span></div>
+            <div class="hud"><span class="rec"><i></i>LIVE</span><span id="camTime"></span></div>
+            <div class="tools"><button id="snapBtn"><span data-icon="camera"></span>拍照</button><button id="boxBtn"><span data-icon="scan"></span>识别</button></div>
+            <div class="flash" id="flash"></div>
+          </div>
+        </div>
+        <div class="tb" data-body="net">
+          <div class="netl cardx">
+            <div>Wi-Fi<span>Home-5G</span></div>
+            <div>信号强度<span id="rssi">-48 dBm</span></div>
+            <div>IP 地址<span>192.168.1.36</span></div>
+            <div>蓝牙<span>已连接 · 手机</span></div>
+            <div>电池<span id="battTxt">78%</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6 设置 -->
+      <section class="page" data-page="settings">
+        <div class="prof">
+          <div class="avatar" id="avatar"></div>
+          <h3 id="petName">我的小伙伴</h3><p>陪伴每一天～</p>
+          <button class="edit" id="editName"><span data-icon="pen"></span>改名</button>
+        </div>
+        <div class="slist cardx">
+          <button class="srow" data-go="faces"><span class="ic" style="background:#ffc93c">😊</span>角色与表情<span class="chev" data-icon="chev"></span></button>
+          <label class="srow"><span class="ic" style="background:#3d8bff" data-icon="volume"></span>音量<input type="range" min="0" max="100" value="60" id="vol"><span class="v" id="volV">60</span></label>
+          <label class="srow"><span class="ic" style="background:#8b7cff" data-icon="sun"></span>亮度<input type="range" min="10" max="100" value="80" id="bright"><span class="v" id="brightV">80</span></label>
+          <button class="srow" id="netRow"><span class="ic" style="background:#36c98a" data-icon="wifi"></span>网络与连接<span class="chev" data-icon="chev"></span></button>
+          <button class="srow" id="aboutRow"><span class="ic" style="background:#26b773" data-icon="info"></span>关于设备<span class="chev" data-icon="chev"></span></button>
+        </div>
+        <nav class="nav cardx" data-nav></nav>
+      </section>
+
+      <!-- 7 表情 -->
+      <section class="page" data-page="faces">
+        <div class="egrid" id="egrid"></div>
+        <nav class="nav cardx" data-nav></nav>
+      </section>
+
+      <!-- 待机全屏 -->
+      <section class="page p-idle" data-page="idle">
+        <div class="clockbig" id="clockBig">14:25</div>
+        <div class="bob"><div id="idleRobot"></div></div>
+        <div class="hint">轻触屏幕返回</div>
+      </section>
+    </div>
+    </div></div>
+    <div class="usb"></div>
+  </div>
+  <div class="caption">按 CoreS3 实际分辨率 <b>320×240</b> 排版，放大 <b id="scaleV">2</b> 倍显示 · 鼠标点击 = 触摸</div>
+</div>
+
+<aside class="panel">
+  <section class="card">
+    <h3>屏幕页面</h3>
+    <div class="row" id="pageBtns"></div>
+  </section>
+  <section class="card">
+    <h3>模拟硬件事件</h3>
+    <div class="row">
+      <button class="btn" id="evShake">摇晃（BMI270）</button>
+      <button class="btn" id="evDark">遮住光线（LTR-553）</button>
+      <button class="btn hold" id="evTalk">按住说话（麦克风）</button>
+    </div>
+    <label class="sl"><span>电量</span><input type="range" id="slBatt" min="0" max="100" value="78"><span id="vBatt">78%</span></label>
+  </section>
+  <section class="card">
+    <h3>WebSocket 日志 <small><span style="color:#2fae74">→ 发出</span> · <span style="color:#c49a2c">← 收到</span></small></h3>
+    <div class="log" id="log"></div>
+  </section>
+  <section class="card">
+    <h3>在 CoreS3 上怎么实现</h3>
+    <ol class="notes-list">
+      <li><b>UI 框架用 LVGL</b>：渐变背景、圆角卡片、阴影、半透明、动画都是 LVGL 自带的能力，这套界面基本能 1:1 做出来。</li>
+      <li><b>机器人用图片</b>：每个表情先导出成带透明通道的 PNG（约 120px），放进 Flash 或 SD 卡；眨眼、说话用几帧图片轮换。</li>
+      <li><b>背景渐变</b>：用 LVGL 的 <code>bg_grad</code> 实时画，或者直接用一张 320×240 的背景图。</li>
+      <li><b>少用模糊</b>：这一版已经去掉了毛玻璃效果，卡片改成白色半透明，ESP32-S3 能流畅渲染。</li>
+      <li><b>中文字体</b>：用 LVGL 字体转换工具只导出用到的汉字（12/14/18px），体积可以控制在几百 KB。</li>
+    </ol>
+  </section>
+</aside>
+
+<script>
+const I = {
+  home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  smile:'<circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01" stroke-width="3"/>',
+  mic:'<rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M19 10.5v.5a7 7 0 0 1-14 0v-.5M12 18v3.5"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  music:'<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/>',
+  chat:'<path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 20.5l1.4-5A8.5 8.5 0 1 1 21 11.5z"/><path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" stroke-width="3"/>',
+  bot:'<rect x="4" y="8" width="16" height="12" rx="4"/><path d="M12 8V5"/><circle cx="12" cy="3.5" r="1.5"/><path d="M9 14h.01M15 14h.01" stroke-width="3.2"/><path d="M2 13v3M22 13v3"/>',
+  case:'<rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 12.5h18"/>',
+  back:'<path d="M19 12H5M11 18l-6-6 6-6"/>',
+  heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.6z"/>',
+  prev:'<path d="M18 5v14L8 12z" fill="currentColor"/><path d="M6 5v14" stroke-width="2.6"/>',
+  next:'<path d="M6 5v14l10-7z" fill="currentColor"/><path d="M18 5v14" stroke-width="2.6"/>',
+  play:'<path d="M8 5v14l11-7z" fill="currentColor"/>',
+  pause:'<path d="M8 5v14M16 5v14" stroke-width="3.6"/>',
+  book:'<path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/>',
+  note:'<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  feather:'<path d="M20 4c-8 0-14 6-14 14M20 4c0 8-6 12-12 12M10 14l-6 6"/>',
+  dots:'<path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="3.4"/>',
+  keyboard:'<rect x="2" y="5.5" width="20" height="13" rx="2.5"/><path d="M6 9.5h.01M10 9.5h.01M14 9.5h.01M18 9.5h.01M6 13h.01M18 13h.01" stroke-width="2.6"/><path d="M9 14.5h6"/>',
+  wave:'<path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 11v2"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  up:'<path d="M6 15l6-6 6 6"/>', down:'<path d="M6 9l6 6 6-6"/>', left:'<path d="M15 6l-6 6 6 6"/>', right:'<path d="M9 6l6 6-6 6"/>',
+  target:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/>',
+  arm:'<path d="M3 21h10M6 21v-3l5-6M11 12l6-3M17 9l3 3"/><circle cx="11" cy="12" r="2"/><circle cx="17" cy="9" r="2"/>',
+  wifi:'<path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor"/>',
+  bt:'<path d="M7 7l10 10-5 5V2l5 5L7 17"/>',
+  battery:'<rect x="2" y="7" width="17" height="10" rx="2.5"/><path d="M22 10.5v3"/><rect x="5" y="10" width="9" height="4" rx="1" fill="currentColor" stroke="none"/>',
+  camera:'<path d="M3 8a2 2 0 0 1 2-2h2l2-2.5h6L17 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="4"/>',
+  scan:'<path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><rect x="8" y="8" width="8" height="8" rx="1.5"/>',
+  pen:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  volume:'<path d="M11 5 6 9H2v6h4l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',
+  monitor:'<rect x="2" y="3.5" width="20" height="13.5" rx="2.5"/><path d="M8 21h8M12 17v4"/>',
+  info:'<circle cx="12" cy="12" r="9.5"/><path d="M12 16.5v-5M12 7.5h.01" stroke-width="2.8"/>',
+  chev:'<path d="M9 18l6-6-6-6"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
+};
+const icon = (n, extra='') => `<svg class="i" viewBox="0 0 24 24" ${extra}>${I[n]||''}</svg>`;
+
+/* ================= robot ================= */
+const EXPR = {
+  happy:'开心', laugh:'大笑', surprised:'惊讶', think:'思考', listen:'倾听', sing:'唱歌',
+  sleep:'睡觉', sad:'难过', excited:'兴奋', playful:'调皮', confused:'疑惑', talk:'说话'
+};
+const S = 'stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"';
+const roundEye = (cx, cy, r=10, look=0) =>
+  `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff"/><circle cx="${cx+look}" cy="${cy+1}" r="${r*.62}" fill="url(#gEye)"/><circle cx="${cx+look-2}" cy="${cy-3}" r="${r*.25}" fill="#fff"/>`;
+const star = (cx, cy, r) => {
+  let p=''; for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5, rr=k%2?r*.45:r; p+=`${cx+rr*Math.cos(a)},${cy+rr*Math.sin(a)} `;}
+  return `<polygon points="${p}" fill="#ffd84a" stroke="#ffb200" stroke-width="1.5" stroke-linejoin="round"/>`;
+};
+const smile = `<path d="M92 101 Q100 112 108 101 Z" fill="#ff6b8a"/>`;
+const FACE = {
+  happy:   {e:`<path d="M73 90 Q82 77 91 90" ${S}/><path d="M109 90 Q118 77 127 90" ${S}/>`, m:smile},
+  laugh:   {e:`<path d="M74 80 L88 87 L74 94" ${S}/><path d="M126 80 L112 87 L126 94" ${S}/>`, m:`<path d="M87 99 Q100 120 113 99 Z" fill="#ff6b8a"/><path d="M93 109 Q100 104 107 109 Q100 116 93 109Z" fill="#ffb0c1"/>`},
+  surprised:{e:roundEye(82,86,12)+roundEye(118,86,12), m:`<ellipse cx="100" cy="107" rx="4.5" ry="5.5" fill="#ff6b8a"/>`},
+  think:   {e:roundEye(82,86,10,3).replace(/cy="87"/,'cy="83"')+`<path d="M109 88 Q118 84 127 88" ${S}/>`, m:`<path d="M93 107 Q100 104 108 105" stroke="#ff6b8a" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+            x:`<text class="float" x="160" y="40" font-size="30" font-weight="800" fill="#3d8bff">?</text><text class="float" x="176" y="70" font-size="20" font-weight="800" fill="#7cc0ff">?</text>`},
+  listen:  {e:`<ellipse cx="82" cy="87" rx="8" ry="11" fill="#9fe0ff"/><ellipse cx="118" cy="87" rx="8" ry="11" fill="#9fe0ff"/><circle cx="80" cy="83" r="2.5" fill="#fff"/><circle cx="116" cy="83" r="2.5" fill="#fff"/>`,
+            m:`<path d="M95 104 Q100 108 105 104" stroke="#ff6b8a" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+            x:`<g stroke="#3d8bff" stroke-width="4" fill="none" stroke-linecap="round" class="float"><path d="M10 78 Q2 90 10 102"/><path d="M190 78 Q198 90 190 102"/></g><g stroke="#7cc0ff" stroke-width="3.5" fill="none" stroke-linecap="round" class="float"><path d="M0 70 Q-12 90 0 110"/><path d="M200 70 Q212 90 200 110"/></g>`},
+  sing:    {e:`<path d="M73 90 Q82 79 91 90" ${S}/><path d="M109 90 Q118 79 127 90" ${S}/>`, m:`<ellipse class="talk-mouth" cx="100" cy="106" rx="7" ry="7" fill="#ff6b8a"/>`,
+            x:`<text class="float" x="-6" y="44" font-size="28" fill="#c37bff">♪</text><text class="float" x="176" y="48" font-size="28" fill="#ffb12b">♫</text>`},
+  sleep:   {e:`<path d="M74 88 Q82 94 90 88" ${S}/><path d="M110 88 Q118 94 126 88" ${S}/>`, m:`<ellipse cx="100" cy="106" rx="3.5" ry="2.5" fill="#ff6b8a"/>`,
+            x:`<text class="float" x="152" y="40" font-size="20" font-weight="800" fill="#8b7cff">z</text><text class="float" x="166" y="22" font-size="28" font-weight="800" fill="#3d8bff">Z</text>`},
+  sad:     {e:`<ellipse cx="82" cy="89" rx="8" ry="9" fill="#fff"/><ellipse cx="118" cy="89" rx="8" ry="9" fill="#fff"/><path d="M72 77 L90 82M128 77 L110 82" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M76 99 q-4 7 0 9 q4-2 0-9z" fill="#7cc0ff"/>`,
+            m:`<path d="M92 109 Q100 101 108 109" stroke="#ff6b8a" stroke-width="4" fill="none" stroke-linecap="round"/>`},
+  excited: {e:star(82,87,13)+star(118,87,13), m:`<path d="M88 100 Q100 118 112 100 Z" fill="#ff6b8a"/>`,
+            x:`<text class="float" x="-4" y="40" font-size="22" fill="#ffc93c">✦</text><text class="float" x="178" y="34" font-size="26" fill="#ff8fbd">✦</text>`},
+  playful: {e:`<path d="M74 81 L88 87 L74 93" ${S}/>`+roundEye(118,86,10,2), m:`<path d="M90 101 Q100 110 110 101" stroke="#ff6b8a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M101 105 q0 9 6 9 q5 0 4-8z" fill="#ff8fa8"/>`},
+  confused:{e:roundEye(82,86,12,-2)+roundEye(119,88,7,1), m:`<path d="M90 106 q5 -5 10 0 t10 0" stroke="#ff6b8a" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+            x:`<text class="float" x="162" y="36" font-size="30" font-weight="800" fill="#3d8bff">?</text><text class="float" x="-8" y="54" font-size="22" font-weight="800" fill="#7cc0ff">?</text>`},
+  talk:    {e:`<ellipse cx="82" cy="87" rx="8" ry="10" fill="#fff"/><ellipse cx="118" cy="87" rx="8" ry="10" fill="#fff"/><circle cx="84" cy="84" r="2.5" fill="#9fdcff"/><circle cx="120" cy="84" r="2.5" fill="#9fdcff"/>`,
+            m:`<ellipse class="talk-mouth" cx="100" cy="106" rx="7" ry="5.5" fill="#ff6b8a"/>`}
+};
+function robotSVG(expr='happy', w=200){
+  const f = FACE[expr] || FACE.happy;
+  return `<svg class="robot" width="${w}" viewBox="-20 -6 240 206" aria-label="机器人·${EXPR[expr]||''}">
+  <!-- body -->
+  <ellipse cx="100" cy="196" rx="48" ry="6" fill="rgba(80,90,180,.12)"/>
+  <g>
+    <ellipse cx="64" cy="152" rx="11" ry="17" fill="url(#gHead)" stroke="#dbe3f5" transform="rotate(18 64 152)"/>
+    <rect x="68" y="126" width="64" height="62" rx="26" fill="url(#gHead)" stroke="#dbe3f5"/>
+    <path d="M100 168 C89 160 87 152 93 149 C96 147 100 150 100 152 C100 150 104 147 107 149 C113 152 111 160 100 168Z" fill="url(#gBlue)"/>
+    <circle cx="80" cy="180" r="3" fill="#7cc0ff" opacity=".6"/><circle cx="118" cy="140" r="2.5" fill="#7cc0ff" opacity=".6"/>
+    <g class="arm-r"><ellipse cx="138" cy="146" rx="11" ry="17" fill="url(#gHead)" stroke="#dbe3f5" transform="rotate(-18 138 146)"/></g>
+  </g>
+  <!-- head -->
+  <path d="M34 80 Q34 14 100 14 Q166 14 166 80" stroke="#eef2fb" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M34 80 Q34 14 100 14 Q166 14 166 80" stroke="#bcd6ff" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <line x1="100" y1="36" x2="100" y2="16" stroke="#cfd9ee" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="100" cy="12" r="7.5" fill="url(#gBlue)"/>
+  <rect x="40" y="34" width="120" height="100" rx="48" fill="url(#gHead)" stroke="#dbe3f5"/>
+  <rect x="24" y="64" width="26" height="48" rx="13" fill="url(#gBlue)"/>
+  <rect x="150" y="64" width="26" height="48" rx="13" fill="url(#gBlue)"/>
+  <rect x="29" y="73" width="7" height="30" rx="3.5" fill="#c9ecff" opacity=".7"/>
+  <rect x="164" y="73" width="7" height="30" rx="3.5" fill="#c9ecff" opacity=".7"/>
+  <rect x="54" y="54" width="92" height="68" rx="32" fill="url(#gVisor)"/>
+  <path d="M68 62 Q80 57 98 57" stroke="#fff" stroke-opacity=".18" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <g class="eyes">${f.e}</g>
+  <ellipse cx="69" cy="104" rx="6" ry="3.5" fill="#ff7aa6" opacity=".55"/>
+  <ellipse cx="131" cy="104" rx="6" ry="3.5" fill="#ff7aa6" opacity=".55"/>
+  ${f.m}
+  ${f.x||''}
+  </svg>`;
+}
+const setRobot = (id, expr, w) => { document.getElementById(id).innerHTML = robotSVG(expr, w); };
+
+/* ============ 补充图标 ============ */
+Object.assign(I, { info:I.info, sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>' });
+document.querySelectorAll('[data-icon]').forEach(el => { if(!el.querySelector('svg')) el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)); });
+
+/* ============ 屏幕缩放 ============ */
+const lcd = document.getElementById('lcd'), vp = document.getElementById('viewport');
+function fit(){
+  const avail = innerWidth > 1080 ? innerWidth - 360 - 28*2 - 28 - 120 : innerWidth - 32 - 120;
+  const s = Math.max(1, Math.min(2.2, avail / 320, (innerHeight - 260) / 240));
+  lcd.style.transform = `scale(${s})`; vp.style.width = 320*s + 'px'; vp.style.height = 240*s + 'px';
+  document.getElementById('scaleV').textContent = s.toFixed(1).replace(/\.0$/,'');
+}
+addEventListener('resize', fit); fit();
+
+/* ============ 状态 ============ */
+const st = { page:'home', expr:'happy', history:[], dark:false, batt:78, override:null };
+const TITLES = { music:'陪伴模式', chat:'AI 助手', control:'机器人控制', device:'设备管理' };
+const ROOT = ['home','settings','faces'];
+const PAGE_LIST = [['home','首页'],['music','陪伴模式'],['chat','AI 助手'],['control','机器人控制'],['device','设备管理'],['settings','设置'],['faces','表情系统'],['idle','待机全屏']];
+
+const logEl = document.getElementById('log');
+function log(cls, o){ const el = document.createElement('div'); el.className = cls;
+  el.textContent = `${new Date().toTimeString().slice(0,8)} ${cls==='in'?'←':'→'} ${JSON.stringify(o)}`;
+  logEl.prepend(el); while(logEl.children.length > 60) logEl.lastChild.remove(); }
+const wsOut = o => log('out', o), wsIn = o => log('in', o), wsEv = o => log('ev', o);
+
+const toastEl = document.getElementById('toast'); let toastT;
+function toast(m){ toastEl.textContent = m; toastEl.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>toastEl.classList.remove('show'), 1600); }
+
+/* ============ 导航 ============ */
+document.getElementById('pageBtns').innerHTML = PAGE_LIST.map(([k,t]) => `<button class="btn" data-pg="${k}">${t}</button>`).join('');
+document.getElementById('pageBtns').onclick = e => { const b = e.target.closest('[data-pg]'); if(b) go(b.dataset.pg, {root:true}); };
+const NAV = [['home','home'],['faces','smile'],['chat','mic'],['settings','gear']];
+document.querySelectorAll('[data-nav]').forEach(n => n.innerHTML = NAV.map(([k,ic]) => `<button data-go="${k}" data-root>${icon(ic)}</button>`).join(''));
+
+function go(page, o={}){
+  if(page === st.page) return;
+  if(o.root) st.history = page === 'home' ? [] : ['home'];
+  else if(!o.back) st.history.push(st.page);
+  document.querySelector(`.page[data-page="${st.page}"]`).classList.remove('active');
+  document.querySelector(`.page[data-page="${page}"]`).classList.add('active');
+  st.page = page;
+  const sub = !ROOT.includes(page) && page !== 'idle';
+  lcd.classList.toggle('sub', sub);
+  document.getElementById('ptitle').textContent = TITLES[page] || '';
+  document.getElementById('clock').style.display = sub ? 'none' : '';
+  document.querySelectorAll('[data-nav] button').forEach(b => b.classList.toggle('on', b.dataset.go === page));
+  document.querySelectorAll('#pageBtns .btn').forEach(b => b.classList.toggle('on', b.dataset.pg === page));
+  if(page === 'home') renderHome();
+  if(page === 'faces') renderFaces();
+  if(page === 'idle') setRobot('idleRobot', curExpr(), 200);
+  wsOut({type:'page', v:page});
+}
+lcd.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]');
+  if(g){ go(g.dataset.go, {root: g.hasAttribute('data-root')}); return; }
+  if(e.target.closest('#backBtn')) go(st.history.pop() || 'home', {back:true});
+});
+document.getElementById('homeBob').onclick = () => go('idle');
+document.querySelector('[data-page="idle"]').onclick = () => go('home', {root:true});
+
+/* 空闲 40 秒自动进入待机 */
+let idleT;
+function resetIdle(){ clearTimeout(idleT); idleT = setTimeout(() => { if(st.page !== 'idle' && !recording && !mus.playing) go('idle'); }, 40000); }
+lcd.addEventListener('pointerdown', resetIdle); resetIdle();
+
+/* 时钟 */
+function tick(){ const d = new Date(), p = x => String(x).padStart(2,'0');
+  document.getElementById('clock').textContent = document.getElementById('clockBig').textContent = `${p(d.getHours())}:${p(d.getMinutes())}`;
+  document.getElementById('camTime').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+setInterval(tick, 1000); tick();
+
+/* ============ 首页 & 表情 ============ */
+const greetings = {
+  happy:'你好呀！<br>今天想和我玩什么？😊', laugh:'哈哈哈～<br>今天心情超好！😆', surprised:'哇！<br>你来啦！😲', think:'嗯…<br>今天玩点什么呢？🤔',
+  listen:'我在听哦～<br>你想说什么？', sing:'啦啦啦～<br>一起唱首歌吧！🎵', sleep:'呼…呼…<br>我有点困了😴', sad:'有点想你了…<br>陪我玩一会儿吧🥺',
+  excited:'太棒啦！<br>我们出发吧！🤩', playful:'嘿嘿～<br>猜猜我在想什么？😜', confused:'咦？<br>这是什么呀？🧐', talk:'我有好多话<br>想跟你说！'
+};
+const curExpr = () => st.override || (st.dark ? 'sleep' : st.batt < 20 ? 'sad' : st.expr);
+function renderHome(){
+  setRobot('homeRobot', curExpr(), 150);
+  document.getElementById('homeBubble').innerHTML = st.batt < 20 && !st.override && !st.dark ? '电量有点低了…<br>帮我充充电吧🔋' : greetings[curExpr()];
+  setRobot('avatar', curExpr(), 78);
+  if(st.page === 'idle') setRobot('idleRobot', curExpr(), 200);
+}
+const egrid = document.getElementById('egrid');
+egrid.innerHTML = Object.entries(EXPR).map(([k,n]) => `<button data-expr="${k}">${robotSVG(k,44)}<div>${n}</div></button>`).join('');
+egrid.onclick = e => { const b = e.target.closest('[data-expr]'); if(!b) return;
+  st.expr = b.dataset.expr; renderFaces(); renderHome(); toast(`已切换为「${EXPR[st.expr]}」`); wsOut({type:'state', expr:st.expr}); };
+function renderFaces(){ egrid.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.expr === st.expr)); }
+
+/* ============ 陪伴模式 ============ */
+const TRACKS = [
+  {t:'小王子',s:'星星的故事…',d:390,c:'故事',e:'🏰',bg:'linear-gradient(160deg,#9fd0ff,#ffd3e6)'},
+  {t:'三只小猪',s:'勇敢与智慧',d:312,c:'故事',e:'🐷',bg:'linear-gradient(160deg,#ffe0b3,#ffc2d4)'},
+  {t:'小星星',s:'经典儿歌',d:95,c:'儿歌',e:'⭐',bg:'linear-gradient(160deg,#2c3a78,#7b6fd6)'},
+  {t:'两只老虎',s:'欢快儿歌',d:88,c:'儿歌',e:'🐯',bg:'linear-gradient(160deg,#fff1b8,#ffc58a)'},
+  {t:'静夜思',s:'李白 · 唐诗',d:60,c:'诗歌',e:'🌙',bg:'linear-gradient(160deg,#1f2a5a,#5b6bbf)'},
+  {t:'春晓',s:'孟浩然 · 唐诗',d:58,c:'诗歌',e:'🌸',bg:'linear-gradient(160deg,#ffe3ef,#c9f0d6)'},
+  {t:'雨声白噪音',s:'助眠 · 放松',d:600,c:'更多',e:'🌧️',bg:'linear-gradient(160deg,#cfd8e8,#93a6c6)'},
+];
+const CATS = [['故事','book'],['儿歌','note'],['诗歌','feather'],['更多','dots']];
+const mus = { cat:'故事', idx:0, pos:84, playing:false };
+const catsEl = document.getElementById('cats');
+catsEl.innerHTML = CATS.map(([c,ic]) => `<button class="cat" data-cat="${c}"><span class="ic">${icon(ic)}</span>${c}</button>`).join('');
+const plist = () => TRACKS.filter(t => t.c === mus.cat);
+const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+function renderTrack(){
+  const tr = plist()[mus.idx];
+  document.getElementById('trTitle').textContent = tr.t;
+  document.getElementById('trSub').textContent = tr.s;
+  const cv = document.getElementById('cover'); cv.textContent = tr.e; cv.style.background = tr.bg;
+  document.getElementById('tDur').textContent = fmt(tr.d);
+  catsEl.querySelectorAll('.cat').forEach(b => b.classList.toggle('on', b.dataset.cat === mus.cat));
+  renderPos();
+}
+function renderPos(){ const tr = plist()[mus.idx];
+  document.getElementById('barFill').style.width = (mus.pos/tr.d*100) + '%';
+  document.getElementById('tCur').textContent = fmt(mus.pos); }
+function setPlaying(p){
+  mus.playing = p;
+  document.getElementById('playBtn').innerHTML = icon(p ? 'pause' : 'play');
+  document.querySelector('[data-page="music"]').classList.toggle('paused', !p);
+  setRobot('musicRobot', p ? 'sing' : 'happy', 124);
+  const tr = plist()[mus.idx]; wsOut({type:'player', playing:p, title:tr.t, pos:Math.round(mus.pos)});
+}
+function step(d){ const L = plist(); mus.idx = (mus.idx + d + L.length) % L.length; mus.pos = 0; renderTrack(); }
+document.getElementById('playBtn').onclick = () => setPlaying(!mus.playing);
+document.getElementById('prevBtn').onclick = () => step(-1);
+document.getElementById('nextBtn').onclick = () => step(1);
+document.getElementById('bar').onclick = e => { const r = e.currentTarget.getBoundingClientRect();
+  mus.pos = Math.max(0, Math.min(1, (e.clientX - r.left)/r.width)) * plist()[mus.idx].d; renderPos(); };
+catsEl.onclick = e => { const b = e.target.closest('[data-cat]'); if(!b) return;
+  mus.cat = b.dataset.cat; mus.idx = 0; mus.pos = 0; renderTrack(); setPlaying(true); };
+setInterval(() => { if(!mus.playing) return; mus.pos++; if(mus.pos >= plist()[mus.idx].d) step(1); else renderPos(); }, 1000);
+renderTrack(); setPlaying(false);
+
+/* ============ AI 助手 ============ */
+const msgs = document.getElementById('msgs');
+const QS = ['今天天气怎么样？','给我讲个笑话','你是谁呀？','现在几点了？','推荐一首儿歌'];
+let qi = 0, busy = false, recording = false;
+function answer(q){ const d = new Date();
+  if(/天气/.test(q)) return '今天晴，气温 24-28°C，非常适合出去玩呢！☀️';
+  if(/笑话/.test(q)) return '数学书为什么总是很忧郁？因为它的问题太多啦！😆';
+  if(/你是谁/.test(q)) return `我是${document.getElementById('petName').textContent}，会聊天、讲故事、唱歌哦～`;
+  if(/几点/.test(q)) return `现在是 ${d.getHours()} 点 ${String(d.getMinutes()).padStart(2,'0')} 分，记得休息眼睛哦～`;
+  return '推荐《小星星》！去「唱歌故事」里就能听到🎵'; }
+function addMsg(who, html){ const el = document.createElement('div'); el.className = 'msg ' + who; el.innerHTML = html;
+  msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; return el; }
+function ask(q){
+  busy = true; document.getElementById('chatBubble').style.opacity = 0;
+  addMsg('u', q); wsIn({type:'asr', text:q});
+  setRobot('chatRobot', 'think', 112);
+  const t = addMsg('b', '<span class="typing"><i></i><i></i><i></i></span>');
+  setTimeout(() => {
+    const a = answer(q); let i = 0; setRobot('chatRobot', 'talk', 112); wsIn({type:'reply', text:a});
+    const ty = setInterval(() => { t.textContent = a.slice(0, ++i); msgs.scrollTop = msgs.scrollHeight;
+      if(i >= a.length){ clearInterval(ty); setRobot('chatRobot', 'happy', 112); busy = false; } }, 45);
+  }, 900);
+}
+const hold = document.getElementById('holdBtn');
+function startRec(){ if(busy || recording) return; if(st.page !== 'chat') go('chat');
+  recording = true; hold.classList.add('rec'); document.getElementById('holdTxt').textContent = '正在聆听…';
+  setRobot('chatRobot', 'listen', 112); wsOut({type:'audio', action:'start', rate:16000}); document.getElementById('evTalk').classList.add('active'); }
+function endRec(){ if(!recording) return; recording = false; hold.classList.remove('rec');
+  document.getElementById('holdTxt').textContent = '按住说话'; wsOut({type:'audio', action:'stop'});
+  document.getElementById('evTalk').classList.remove('active'); ask(QS[qi++ % QS.length]); }
+hold.addEventListener('pointerdown', e => { hold.setPointerCapture(e.pointerId); startRec(); });
+hold.addEventListener('pointerup', endRec); hold.addEventListener('pointercancel', endRec);
+setRobot('chatRobot', 'happy', 112);
+addMsg('u', '今天天气怎么样？'); addMsg('b', answer('天气'));
+
+/* ============ 机器人控制 ============ */
+const ctl = { angle:90, pitch:0, follow:null };
+function renderCtl(){
+  document.getElementById('angleV').textContent = Math.round(ctl.angle) + '°';
+  document.getElementById('pitchV').textContent = (ctl.pitch > 0 ? '+' : '') + ctl.pitch + '°';
+  const yaw = ctl.angle - 90;
+  document.getElementById('ctlWrap').style.transform = `translateX(${yaw*.12}px) rotate(${yaw*.15}deg) translateY(${-ctl.pitch*.4}px)`;
+}
+function move(dir){
+  if(ctl.follow) stopFollow(true);
+  if(dir==='left')  ctl.angle = Math.max(0, ctl.angle - 10);
+  if(dir==='right') ctl.angle = Math.min(180, ctl.angle + 10);
+  if(dir==='up')    ctl.pitch = Math.min(30, ctl.pitch + 5);
+  if(dir==='down')  ctl.pitch = Math.max(-30, ctl.pitch - 5);
+  if(dir==='center'){ ctl.angle = 90; ctl.pitch = 0; toast('已复位'); }
+  setRobot('ctlRobot', ctl.angle===0 || ctl.angle===180 ? 'surprised' : dir==='center' ? 'happy' : 'excited', 104);
+  renderCtl(); wsOut({type:'servo', yaw:Math.round(ctl.angle), pitch:ctl.pitch});
+}
+let rep;
+document.querySelectorAll('.pad button').forEach(b => {
+  b.addEventListener('pointerdown', () => { move(b.dataset.dir); if(b.dataset.dir !== 'center') rep = setInterval(() => move(b.dataset.dir), 180); });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, () => clearInterval(rep)));
+});
+function stopFollow(silent){ clearInterval(ctl.follow); ctl.follow = null; document.getElementById('followBtn').classList.remove('on'); if(!silent) toast('已停止'); }
+document.getElementById('followBtn').onclick = () => {
+  if(ctl.follow){ stopFollow(); setRobot('ctlRobot','happy',104); return; }
+  document.getElementById('followBtn').classList.add('on'); setRobot('ctlRobot','listen',104); toast('自动跟随中');
+  let t = 0; ctl.follow = setInterval(() => { t += .08; ctl.angle = 90 + Math.sin(t)*55; renderCtl(); }, 60);
+};
+document.getElementById('stopBtn').onclick = () => { stopFollow(); setRobot('ctlRobot','happy',104); };
+document.getElementById('rangeBtn').onclick = () => toast('水平 0°~180° · 俯仰 ±30°');
+setRobot('ctlRobot', 'happy', 104); renderCtl();
+
+/* ============ 设备管理 ============ */
+document.getElementById('tabs').onclick = e => { const b = e.target.closest('[data-tab]'); if(b) setTab(b.dataset.tab); };
+function setTab(t){
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === t));
+  document.querySelectorAll('[data-body]').forEach(x => x.classList.toggle('on', x.dataset.body === t));
+}
+const sens = { t:26.5, h:62, l:120, hist:Array.from({length:30}, (_,i) => 26.5 + Math.sin(i/4)*.4) };
+function renderChart(){
+  const min = Math.min(...sens.hist) - .2, max = Math.max(...sens.hist) + .2;
+  const d = sens.hist.map((v,i) => (i ? 'L' : 'M') + (i*300/29).toFixed(1) + ' ' + (56 - (v-min)/(max-min)*50).toFixed(1)).join(' ');
+  document.getElementById('chart').innerHTML = `<path d="${d} L300 60 L0 60Z" fill="#ff8fbd" fill-opacity=".22"/><path d="${d}" fill="none" stroke="#ff5b97" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+}
+setInterval(() => {
+  sens.t = Math.max(22, Math.min(30, sens.t + (Math.random()-.5)*.3));
+  sens.h = Math.max(40, Math.min(80, sens.h + Math.round((Math.random()-.5)*2)));
+  if(!st.dark) sens.l = Math.max(60, Math.min(400, sens.l + Math.round((Math.random()-.5)*16)));
+  sens.hist.push(sens.t); sens.hist.shift();
+  document.getElementById('sTemp').textContent = sens.t.toFixed(1);
+  document.getElementById('sHum').textContent = sens.h;
+  document.getElementById('sLux').textContent = sens.l;
+  document.getElementById('rssi').textContent = (-44 - Math.round(Math.random()*8)) + ' dBm';
+  renderChart();
+}, 2000);
+renderChart();
+setInterval(() => wsOut({type:'state', expr:curExpr(), temp:+sens.t.toFixed(1), hum:sens.h, lux:sens.l, batt:st.batt}), 6000);
+document.getElementById('snapBtn').onclick = () => { const f = document.getElementById('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); toast('已保存到 SD 卡'); };
+document.getElementById('boxBtn').onclick = () => { const b = document.getElementById('camBox'); b.hidden = !b.hidden; toast(b.hidden ? '已关闭识别' : '识别：猫咪在睡觉'); };
+
+/* ============ 设置 ============ */
+document.getElementById('vol').oninput = e => document.getElementById('volV').textContent = e.target.value;
+document.getElementById('bright').oninput = e => { document.getElementById('brightV').textContent = e.target.value; lcd.style.filter = `brightness(${.55 + e.target.value/100*.45})`; };
+document.getElementById('netRow').onclick = () => { setTab('net'); go('device'); };
+document.getElementById('aboutRow').onclick = () => toast('CoreS3 · 固件 v0.1.0');
+document.getElementById('editName').onclick = () => { const n = prompt('给小伙伴起个名字吧', document.getElementById('petName').textContent);
+  if(n && n.trim()){ document.getElementById('petName').textContent = n.trim().slice(0,8); toast('名字已更新'); } };
+
+/* ============ 模拟硬件事件 ============ */
+document.getElementById('evShake').onclick = () => {
+  wsEv({type:'event', imu:'shake'});
+  if(st.page !== 'home' && st.page !== 'idle') go('home', {root:true});
+  const box = document.getElementById(st.page === 'idle' ? 'idleRobot' : 'homeRobot');
+  st.override = 'surprised'; renderHome();
+  box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+  setTimeout(() => { st.override = 'confused'; renderHome(); }, 1200);
+  setTimeout(() => { st.override = null; renderHome(); }, 2600);
+};
+document.getElementById('evDark').onclick = e => {
+  st.dark = !st.dark; sens.l = st.dark ? 3 : 120; document.getElementById('sLux').textContent = sens.l;
+  e.currentTarget.classList.toggle('on', st.dark); e.currentTarget.textContent = st.dark ? '移开遮挡' : '遮住光线（LTR-553）';
+  if(st.dark && st.page !== 'idle') go('idle'); renderHome();
+  wsOut({type:'state', lux:sens.l, expr:curExpr()});
+};
+const evTalk = document.getElementById('evTalk');
+evTalk.addEventListener('pointerdown', startRec);
+evTalk.addEventListener('pointerup', endRec);
+evTalk.addEventListener('pointerleave', endRec);
+document.getElementById('slBatt').oninput = e => {
+  st.batt = +e.target.value; document.getElementById('vBatt').textContent = st.batt + '%';
+  const b = document.getElementById('batt'); b.querySelector('i').style.width = st.batt + '%'; b.classList.toggle('low', st.batt < 20);
+  document.getElementById('battTxt').textContent = st.batt + '%'; renderHome();
+};
+
+/* 启动 */
+const q = new URLSearchParams(location.search);    // 调试：?p=music
+renderHome(); renderFaces();
+document.querySelectorAll('[data-nav] button').forEach(b => b.classList.toggle('on', b.dataset.go === 'home'));
+document.querySelector('#pageBtns [data-pg="home"]').classList.add('on');
+wsOut({type:'hello', device:'CoreS3', screen:[320,240]});
+if(q.get('p')) go(q.get('p'), {root:true});
+</script>
+</body>
+</html>

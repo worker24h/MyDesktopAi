@@ -3,3 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+# 素材转换脚本的 Python 虚拟环境
+tools/.venv/
+.DS_Store

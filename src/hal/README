@@ -1,0 +1,145 @@
+ HAL 是 Hardware Abstraction Layer（硬件抽象层） 的缩写。它的作用是：把「和具体硬件打交道的代码」集中放在一起，和界面、业务逻辑隔开
+
+
+ LVGL（Light and Versatile Graphics Library，轻量通用图形库）是一个专门给单片机做图形界面的开源库。
+ 可以把它理解成嵌入式设备上的「迷你版网页前端」：你创建按钮、文字、图片、滑块这些控件，给它们设样式，
+ 它负责把界面画到屏幕上，并处理触摸。
+
+
+ SRAM==512KB
+ PSRAM==8MB
+ Flash==16MB
+
+
+三种内存的用法完全不同：
+- SRAM 和 PSRAM 是运行时内存，通过「申请/释放」来使用
+- Flash 不能当内存申请，只能写程序时把只读数据放进去，或者通过文件系统读写
+
+一、SRAM（芯片内部，约 320KB 可用）
+
+普通写法默认都在 SRAM：
+
+int counter = 0;                    // 全局变量、静态变量：编译时就分配在 SRAM
+void foo() {
+    char buf[256];                  // 局部变量：在当前任务的栈上（栈也在 SRAM）
+}
+uint8_t *p = (uint8_t *)malloc(1024);   // 小块 malloc / new：默认从 SRAM 分配
+
+必须在 SRAM 的情况，要显式指定：
+
+// 1. DMA 缓冲（屏幕、I2S 音频、SPI 外设直接读写的内存）
+void *dma_buf = heap_caps_malloc(320 * 40 * 2, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+
+// 2. 中断里用到的函数和数据
+void IRAM_ATTR onTimer() { ... }        // 函数放进 SRAM 执行
+DRAM_ATTR static const int table[] = {...};  // 中断要读的常量也放进 SRAM
+
+二、PSRAM（外置，8MB）
+
+显式申请（推荐，意图清楚）：
+
+// Arduino 写法
+uint8_t *rec = (uint8_t *)ps_malloc(320 * 1024);          //
+// ESP-IDF 写法，效果一样
+uint8_t *rec2 = (uint8_t *)heap_caps_malloc(320 * 1024, MALLOC_CAP_SPIRAM);
+
+if (!rec) { /* 一定要检查是否分配成功 */ }
+free(rec);                                               // 释放用普通 free 就行
+
+各个库的 PSRAM 开关：
+
+// M5GFX 画布
+M5Canvas canvas(&M5.Display);
+canvas.setPsram(true);
+canvas.createSprite(320, 240);
+
+// 摄像头帧缓冲
+camera_config_t cfg = {};
+cfg.fb_location = CAMERA_FB_IN_PSRAM;
+
+// ArduinoJson 7：自定义分配器，让大 JSON 文档放进 PSRAM
+struct PsramAllocator : ArduinoJson::Allocator {
+    void *allocate(size_t n) override { return ps_malloc(n); }
+    void deallocate(void *p) override { free(p); }
+    void *reallocate(void *p, size_t n) override { return ps_realloc(p, n); }
+};
+static PsramAllocator psramAlloc;
+JsonDocument doc(&psramAlloc);
+
+LVGL 按方案里的配置用 LV_STDLIB_CLIB，走的就是系统 malloc。
+
+自动分配：Arduino 核心开启了「malloc 可以用 PSRAM」。一般来说小块分配留在 SRAM，比较大的块可能会被分配到
+PSRAM，具体阈值由预编译配置决定。所以重要的缓冲区不要依赖自 aps_malloc 显式指定。
+
+三、Flash（16MB）
+
+Flash 不能 malloc，有两种用法：
+
+1. 只读数据：编译时放进去，运行时直接读
+
+const uint8_t robot_happy_L_map[] = { ... };   // 加了 const
+const char *GREETINGS[] = { "你好呀！", ... };  // 字符串字面量本来就在 Flash
+
+- 方案里转换出来的机器人图片、字体 .c 文件都是这种。它们不占 RAM，读取时通过芯片的缓存映射访问。
+- ESP32 上不需要 AVR 那种 PROGMEM，写 const 就够了。
+- 忘了写 const 的大数组会被复制到 SRAM，直接把内存吃光。
+
+2. 运行时要写入：通过文件系统或键值存储
+
+// 小配置：NVS 键值存储（Preferences）
+#include <Preferences.h>
+Preferences prefs;
+prefs.begin("ui", false);
+prefs.putUChar("volume", 60);
+uint8_t vol = prefs.getUChar("volume", 60);
+
+// 文件：LittleFS（Flash 里划出的一个分区）
+#include <LittleFS.h>
+LittleFS.begin(true);
+File f = LittleFS.open("/cfg.json", "w"); f.print("{}"); f.close();
+
+Flash 里各部分的大小由分区表决定（固件、OTA、NVS、LittleFS），在 platformio.ini 里用 board_build.partitions 指定。
+Flash 的擦写次数有限，不要频繁写。比如音量滑块松手时才保存，不要拖
+
+四、怎么选
+
+┌───────────────────────────────────────┬──────────────┬─────────────────────────────────┐
+│                 数据                  │    放哪里    │                          怎么写                           │
+├───────────────────────────────────────┼──────────────┼─────────────────────────────────┤
+│ 普通变量、小对象、任务栈              │ SRAM         │ 正常写，不用管                                            │
+├───────────────────────────────────────┼──────────────┼─────────────────────────────────┤
+│ DMA 缓冲（LVGL 绘制缓冲、I2S）        │ SRAM         │ heap_caps_malloc(…, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL) │
+├───────────────────────────────────────┼──────────────┼─────────────────────────────────┤
+│ 中断函数和它用到的数据                │ SRAM         │ IRAM_ATTR / DRAM_ATTR                                     │
+├───────────────────────────────────────┼──────────────┼─────────────────────────────────┤
+│ 摄像头帧、录音、MP3 解码缓冲、大 JSON │ PSRAM        │ ps_malloc 或各库的 PSRAM 开关                             │
+├───────────────────────────────────────┼──────────────┼─────────────────────────────────┤
+│ 图片、字体、文案、查找表              │ Flash        │ const 全局数组                                            │
+├───────────────────────────────────────┼──────────────┼─────────────────────────────────┤
+│ 设置项（音量、亮度、名字）            │ Flash（NVS） │ Preferences                                               │
+├───────────────────────────────────────┼──────────────┼─────────────────────────────────┤
+│ 较大的文件（照片、音频、日志）        │ SD 卡        │ 你工程里现有的 /data 目录                                 │
+└───────────────────────────────────────┴──────────────┴─────────────────────────────────┘
+
+五、常见的坑
+
+1. DMA 不要用 PSRAM：外设直接搬数据时，PSRAM 速度慢，有时根
+2. 中断里不要碰 PSRAM 和 Flash：写 Flash 期间，芯片会暂时关闭缓存，这时中断去读 PSRAM 或 Flash 里的数据会导致崩溃。
+3. 内存碎片：剩余内存总量够，但没有一块连续的大空间，大块分  冲区在启动时一次性申请、一直复用，不要在 loop里反复申请和释放。
+4. 一定要检查返回值：分配失败时返回 nullptr，直接使用会崩溃
+
+六、随时查看内存情况
+
+void printMem() {
+    Serial.printf("SRAM  剩余 %6u KB，最大连续块 %6u KB\n",
+        heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024,
+        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL) / 1024);
+    Serial.printf("PSRAM 剩余 %6u KB，最大连续块 %6u KB\n",
+        heap_caps_get_free_size(MALLOC_CAP_SPIRAM) / 1024,
+        heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)
+    Serial.printf("可 DMA 剩余 %6u KB\n", heap_caps_get_free_size(MALLOC_CAP_DMA) / 1024);
+}
+
+建议每完成一个里程碑就调用一次，记录下来。如果「最大连续块」。
+
+
