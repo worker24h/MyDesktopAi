@@ -111,7 +111,7 @@ static void create_tiles(lv_obj_t *scr) {
   }
 }
 
-lv_obj_t *scr_home_create() {
+lv_obj_t *mda_home_create() {
   lv_obj_t *scr = lv_obj_create(NULL);
   no_scroll(scr);
 

@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "tools/build"
 FONT_OUT = ROOT / "src/assets/fonts"
 SCAN_DIRS = [ROOT / "src/ui", ROOT / "src/app"]
-FONT_NAMES = ["font_cn_11", "font_cn_14", "font_cn_18"]
+FONT_NAMES = ["font_cn_11", "font_cn_14", "font_cn_18", "font_num_13b"]  # font_num_13b：粗体数字，只有 ASCII 和 °，没有图标
 
 # 需要导出的非 ASCII 字符：中文、全角标点、常用符号（° · … — “” ‘’ ♪ ♫ ×）
 CJK_RE = re.compile(r"[°·×‐-‧♪♫"
@@ -72,7 +72,7 @@ def write_header(icons):
     ]
     lines += [f"LV_FONT_DECLARE({n});" for n in FONT_NAMES]
     lines.append("")
-    lines.append("// Lucide 图标（UTF-8 字符串），三个字号都包含，用法：lv_label_set_text(lbl, ICON_HOME);")
+    lines.append("// Lucide 图标（UTF-8 字符串），font_cn_11/14/18 都包含（font_num_13b 没有），用法：lv_label_set_text(lbl, ICON_HOME);")
     for macro, name, code in icons:
         utf8 = "".join(f"\\x{b:02X}" for b in chr(code).encode("utf-8"))
         lines.append(f"#define ICON_{macro:<10} \"{utf8}\"   // {name} U+{code:04X}")

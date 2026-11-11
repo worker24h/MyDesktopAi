@@ -1,7 +1,7 @@
 #include <M5Unified.h>
 #include <lvgl.h>
+#include "config/mda_config.h"
 
-static constexpr int W = 320, H = 240;
 static constexpr int BUF_LINES = 40;  // 每次刷新 40 行，缓冲区大小 = W * BUF_LINES * 2（RGB565）
 
 static uint32_t mda_lvgl_tick_callback() {
@@ -45,11 +45,11 @@ static void mda_touch_cb(lv_indev_t *indev, lv_indev_data_t *data) {
 void mda_lvgl_initilaized() {
   lv_init();
   lv_tick_set_cb(mda_lvgl_tick_callback);
-  //设置成屏幕大小
-  lv_display_t *display = lv_display_create(W, H);
+  //设置成屏幕大小 320*240
+  lv_display_t *display = lv_display_create(MDA_SCREEN_WIDTH, MDA_SCREEN_HEIGHT);
 
   // RGB565
-  const size_t sz = W * BUF_LINES * sizeof(uint16_t);
+  const size_t sz = MDA_SCREEN_WIDTH * BUF_LINES * sizeof(uint16_t);
   void *buf2 = heap_caps_malloc(sz, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
   void *buf1 = heap_caps_malloc(sz, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
   lv_display_set_buffers(display, buf1, buf2, sz, LV_DISPLAY_RENDER_MODE_PARTIAL);

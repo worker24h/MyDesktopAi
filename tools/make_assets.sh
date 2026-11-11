@@ -43,7 +43,9 @@ BUILD=tools/build                      # 中间文件（不进 git）
 CN_FONT=$FONT_SRC/NotoSansSC-Medium.otf
 ICON_FONT=$FONT_SRC/lucide.ttf
 ICON_INFO=$FONT_SRC/lucide-info.json
+CN_BOLD_FONT=$FONT_SRC/NotoSansSC-Bold.otf
 NOTO_URL=https://github.com/notofonts/noto-cjk/raw/Sans2.004/Sans/SubsetOTF/SC/NotoSansSC-Medium.otf
+NOTO_BOLD_URL=https://github.com/notofonts/noto-cjk/raw/Sans2.004/Sans/SubsetOTF/SC/NotoSansSC-Bold.otf
 LUCIDE_URL=https://cdn.jsdelivr.net/npm/lucide-static@1.62.0/font
 FONT_CONV="npx -y lv_font_conv@1.5.3"
 
@@ -61,6 +63,7 @@ make_fonts() {
   # 1. 字体文件：Noto Sans SC（OFL 授权，可商用）+ Lucide 图标字体（ISC 授权）
   mkdir -p "$FONT_SRC" "$FONT_OUT" "$BUILD"
   download "$NOTO_URL"               "$CN_FONT"
+  download "$NOTO_BOLD_URL"          "$CN_BOLD_FONT"
   download "$LUCIDE_URL/lucide.ttf"  "$ICON_FONT"
   download "$LUCIDE_URL/info.json"   "$ICON_INFO"
 
@@ -83,6 +86,13 @@ make_fonts() {
   gen 11 "$ui"
   gen 14 "$ui$common"
   gen 18 "$ui"
+
+  # 4. 粗体数字字体：只有 ASCII 和 °，用于状态栏时间、角度、温度等数字（设计稿是粗体）
+  #    中文字体里的数字比汉字小一圈，所以字号比正文大 2px，视觉上才和 11px 汉字差不多
+  echo "生成 font_num_13b.c ..."
+  $FONT_CONV --bpp 4 --size 13 --format lvgl --no-compress --lv-include lvgl.h \
+    --font "$CN_BOLD_FONT" -r 0x20-0x7E,0xB0 \
+    -o "$FONT_OUT/font_num_13b.c"
 
   echo "字体完成：$(ls -lh "$FONT_OUT"/*.c | awk '{print $9, $5}' | tr '\n' ' ')"
 }

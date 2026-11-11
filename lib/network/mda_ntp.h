@@ -18,10 +18,16 @@ void mda_ntp_loop();
 // 系统时间是否有效（来自 RTC 或 NTP，年份 >= 2024）
 bool mda_time_valid();
 
-// 把当前本地时间格式化为 "17:30:05"。时间无效时返回 false。
+// 把当前本地时间格式化为 "17:30:05"。时间无效时返回 false
 bool mda_time_format(char *buf, size_t len);
 
-// 把当前本地时间格式化为 "2026-11-08 17:30:05"。时间无效时返回 false。
+// 把当前本地时间格式化为 "2026-11-08 17:30:05"。时间无效时返回 false
 bool mda_datetime_format(char *buf, size_t len);
+
+// 把当前本地时间格式化为 "2026-11-08"。时间无效时返回 false
+bool mda_date_format(char *buf, size_t len);
+
+// 把当前本地时间格式化为 "2026-11-08"。时间无效时返回 false
+bool mda_date_format_custom(const char* formt, char *buf, size_t len);
 
 #endif

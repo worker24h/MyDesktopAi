@@ -117,6 +117,17 @@ bool mda_time_format(char *buf, size_t len) {
   return true;
 }
 
+bool mda_date_format(char *buf, size_t len) {
+  if (!mda_time_valid()) {
+    return false;
+  }
+  time_t now = time(nullptr);
+  tm local;
+  localtime_r(&now, &local);
+  strftime(buf, len, "%Y-%m-%d", &local);
+  return true;
+}
+
 bool mda_datetime_format(char *buf, size_t len) {
   if (!mda_time_valid()) {
     return false;
@@ -125,5 +136,16 @@ bool mda_datetime_format(char *buf, size_t len) {
   tm local;
   localtime_r(&now, &local);
   strftime(buf, len, "%Y-%m-%d %H:%M:%S", &local);
+  return true;
+}
+
+bool mda_date_format_custom(const char* formt, char *buf, size_t len) {
+  if (!mda_time_valid()) {
+    return false;
+  }
+  time_t now = time(nullptr);
+  tm local;
+  localtime_r(&now, &local);
+  strftime(buf, len, formt, &local);
   return true;
 }
