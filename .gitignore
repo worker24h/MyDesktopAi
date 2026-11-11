@@ -7,3 +7,7 @@
 # 素材转换脚本的 Python 虚拟环境
 tools/.venv/
 .DS_Store
+
+# 字体素材：下载的字体文件、中间文件
+tools/assets/fonts/
+tools/build/

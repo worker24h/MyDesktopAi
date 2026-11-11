@@ -59,15 +59,17 @@ EXPORT_JS = r"""
 })().catch(e => document.body.setAttribute('data-out', JSON.stringify({ __error: String(e) })));
 """
 
-# 背景：和设计稿 .lcd 的背景完全一致（渐变 + 两团白色光斑）
+# 背景：和设计稿 .lcd 的背景一致（渐变 + 两团白色光斑），改设计稿配色时这里要同步改
+#   这套配色按 CoreS3 屏幕调过：粉色更饱和、从中间（48%）开始就是粉色，白色光斑较淡
+#   原因：CoreS3 屏幕偏冷、显示淡色时饱和度不够，太淡的粉色在设备上看不出来
 BG_HTML = """<!doctype html><html><head><style>
 html,body{margin:0;width:320px;height:240px;overflow:hidden}
 .lcd{position:relative;width:320px;height:240px;overflow:hidden;
-  background:linear-gradient(160deg,#cfe0ff 0%,#e6dcff 50%,#ffe2ef 100%)}
+  background:linear-gradient(160deg,#d6e2ff 0%,#dcd0ff 22%,#ffc0dc 48%,#ffa9cc 100%)}
 .lcd::before{content:"";position:absolute;width:220px;height:80px;left:-50px;top:150px;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(255,255,255,.85),transparent)}
+  background:radial-gradient(closest-side,rgba(255,255,255,.40),transparent)}
 .lcd::after{content:"";position:absolute;width:200px;height:70px;right:-60px;top:100px;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(255,255,255,.7),transparent)}
+  background:radial-gradient(closest-side,rgba(255,255,255,.30),transparent)}
 </style></head><body><div class="lcd"></div></body></html>"""
 
 

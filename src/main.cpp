@@ -9,87 +9,22 @@
 #include "mda_logger.h"
 #include "mda_ntp.h"
 #include "hal/mda_lvgl.h"
+#include "ui/mda_ui.h"
 
 // CoreS3 自己开的 WiFi 热点（管理入口）。密码至少 8 位，请改成你自己的。
 static const char *AP_SSID = "CoreS3-SD";
 static const char *AP_PASSWORD = "cores3sd";
 
-// 屏幕最上方一行显示时间，每秒刷新。只重画这一行，不会整屏闪烁
-static const int CLOCK_HEIGHT = 16;  // 字号 2 时一行高 16 像素
-
-static void drawClock() {
-  char text[32];
-  if (!mda_time_format(text, sizeof(text))) {
-    snprintf(text, sizeof(text), "time not synced");
-  }
-  // 补空格到固定宽度，并带背景色绘制，直接覆盖上一次的内容，不需要先清屏
-  char line[32];
-  snprintf(line, sizeof(line), "%-9s", text);
-  M5.Display.setTextSize(2);
-  M5.Display.setTextColor(TFT_WHITE, TFT_BLACK);
-  M5.Display.setCursor(0, 0);
-  M5.Display.print(line);
-}
-
-// 屏幕上显示 AP 和 STA 的状态，STA 状态变化时重画
-static void drawStatus() {
-  WifiStaStatus st = wifi_sta_get_status();
-
-  M5.Display.fillScreen(TFT_BLACK);
-  drawClock();
-  M5.Display.setCursor(0, CLOCK_HEIGHT + 8);
-  M5.Display.setTextSize(2);
-  //M5.Display.println("MyDesktopAi");
-
-  M5.Display.println("[AP]");
-  M5.Display.printf("SSID: %s\n", AP_SSID);
-  M5.Display.printf("Pass: %s\n", AP_PASSWORD);
-  M5.Display.print("http://");
-  M5.Display.println(WiFi.softAPIP());
-  M5.Display.println();
-
-  M5.Display.println("[STA]");
-  switch (st.state) {
-    case WifiStaState::NotConfigured: {
-      M5.Display.println("not configured");
-      M5.Display.println("open /wifi to set up");
-      break;
-    }
-    case WifiStaState::Connecting: {
-      M5.Display.printf("%s\n", st.ssid.c_str());
-      M5.Display.println("connecting...");
-      break;
-    }
-    case WifiStaState::Connected: {
-      M5.Display.printf("%s\n", st.ssid.c_str());
-      M5.Display.printf("IP: %s\n", st.ip.c_str());
-      break;
-    }
-    case WifiStaState::Stopped: {
-      M5.Display.printf("%s\n", st.ssid.c_str());
-      M5.Display.printf("stopped: %s\n", st.lastReasonName.c_str());
-      M5.Display.println("re-save on /wifi to retry");
-      break;
-    }
-    case WifiStaState::Failed: {
-      M5.Display.printf("%s\n", st.ssid.c_str());
-      M5.Display.printf("failed: %s\n", st.lastReasonName.c_str());
-      break;
-    }
-  }
-
-  if (!sd_is_mounted()) {
-    M5.Display.println();
-    M5.Display.println("SD card not ready");
-  }
-}
 
 /**
  * 配置项目
  */
 void setup() {
-  M5.begin();
-  Serial.begin(115200);
+  auto cfg = M5.config();
+  cfg.serial_baudrate = 115200;
+  cfg.led_brightness = 200;
+  M5.begin(cfg);
+
   int count = 3;
   while (!Serial && count > 0) {
     ; // 最多等 3 秒串口连接，超时后继续运行
@@ -124,15 +59,15 @@ void setup() {
   webfs_setup();
   web_wifi_setup();
 
-  drawStatus();
-  logger.info("main", "setup done");
-
   Serial.printf("芯片: %s，%d 核，%d MHz\n", ESP.getChipModel(), ESP.getChipCores(), ESP.getCpuFreqMHz());
   Serial.printf("内部 SRAM 剩余: %u KB\n", ESP.getFreeHeap() / 1024);
   Serial.printf("PSRAM 总共: %u KB，剩余: %u KB\n", ESP.getPsramSize() / 1024, ESP.getFreePsram() / 1024);
   Serial.printf("Flash: %u MB\n", ESP.getFlashChipSize() / 1024 / 1024);
 
   mda_lvgl_initilaized();
+  ui_init();
+
+  logger.info("main", "setup done");
 }
 
 /**
@@ -145,25 +80,4 @@ void loop() {
   mda_ntp_loop();
   mda_lvgl_loop();
 
-  // 每秒刷新一次时间
-  static time_t lastSecond = 0;
-  time_t nowSecond = time(nullptr);
-  if (nowSecond != lastSecond) {
-    lastSecond = nowSecond;
-    drawClock();
-  }
-
-  // STA 状态或 IP 变化时刷新屏幕
-  static WifiStaState lastState = WifiStaState::NotConfigured;
-  static String lastIp;
-  static uint32_t lastCheck = 0;
-  if (millis() - lastCheck >= 500) {
-    lastCheck = millis();
-    WifiStaStatus st = wifi_sta_get_status();
-    if (st.state != lastState || st.ip != lastIp) {
-      lastState = st.state;
-      lastIp = st.ip;
-      drawStatus();
-    }
-  }
 }

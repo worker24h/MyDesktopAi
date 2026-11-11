@@ -1,0 +1,41 @@
+# 界面用到的图标：宏名  Lucide 图标名
+# 图标名在 https://lucide.dev/icons 查；改完重新运行 bash tools/make_assets.sh
+# 生成结果：src/assets/fonts/mda_fonts.h 里的 #define ICON_xxx
+HOME        house
+SMILE       smile
+MIC         mic
+SETTINGS    settings
+MUSIC       music
+CHAT        message-circle
+BOT         bot
+CASE        briefcase
+BACK        arrow-left
+HEART       heart
+PREV        skip-back
+NEXT        skip-forward
+PLAY        play
+PAUSE       pause
+BOOK        book-open
+NOTE        music-2
+FEATHER     feather
+DOTS        ellipsis
+KEYBOARD    keyboard
+WAVE        audio-lines
+TRASH       trash-2
+UP          chevron-up
+DOWN        chevron-down
+LEFT        chevron-left
+RIGHT       chevron-right
+TARGET      crosshair
+ARM         grab
+WIFI        wifi
+BT          bluetooth
+BATTERY     battery-medium
+CAMERA      camera
+SCAN        scan
+PEN         pencil
+VOLUME      volume-2
+SUN         sun
+MONITOR     monitor
+INFO        info
+USER        user

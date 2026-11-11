@@ -41,9 +41,9 @@ h1{font-size:22px;margin:0 0 4px}
 
 /* ---------------- 320×240 屏幕 ---------------- */
 .lcd{position:absolute;left:0;top:0;width:320px;height:240px;overflow:hidden;transform-origin:0 0;font-size:12px;user-select:none;-webkit-user-select:none;
-  background:linear-gradient(160deg,#cfe0ff 0%,#e6dcff 50%,#ffe2ef 100%)}
-.lcd::before{content:"";position:absolute;width:220px;height:80px;left:-50px;top:150px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.85),transparent);pointer-events:none}
-.lcd::after{content:"";position:absolute;width:200px;height:70px;right:-60px;top:100px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.7),transparent);pointer-events:none}
+  background:linear-gradient(160deg,#cfe0ff 0%,#e2d8ff 35%,#ffcfe5 70%,#ffc2dc 100%)}
+.lcd::before{content:"";position:absolute;width:220px;height:80px;left:-50px;top:150px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.55),transparent);pointer-events:none}
+.lcd::after{content:"";position:absolute;width:200px;height:70px;right:-60px;top:100px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.45),transparent);pointer-events:none}
 
 .sbar{position:absolute;z-index:20;top:0;left:0;right:0;height:22px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:11px}
 .sbar .l{display:flex;align-items:center;gap:6px}
@@ -232,7 +232,7 @@ h1{font-size:22px;margin:0 0 4px}
 .egrid button.on{background:#fff;box-shadow:0 0 0 1.5px var(--violet),var(--shadow)}
 
 /* 待机全屏 */
-.p-idle{padding:0;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#cfe0ff 0%,#e6dcff 50%,#ffe2ef 100%)}
+.p-idle{padding:0;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#cfe0ff 0%,#e2d8ff 35%,#ffcfe5 70%,#ffc2dc 100%)}
 .p-idle.active{z-index:30}
 .p-idle .clockbig{position:absolute;top:8px;left:12px;font-size:20px;font-weight:800;color:rgba(42,47,74,.55)}
 .p-idle .hint{position:absolute;bottom:8px;width:100%;text-align:center;font-size:10px;color:var(--ink-2)}
