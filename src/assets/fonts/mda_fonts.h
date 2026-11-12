@@ -37,6 +37,7 @@ LV_FONT_DECLARE(font_num_13b);
 #define ICON_TARGET     "\xEE\x82\xAC"   // crosshair U+E0AC
 #define ICON_ARM        "\xEE\x87\xA6"   // grab U+E1E6
 #define ICON_WIFI       "\xEE\x86\xAE"   // wifi U+E1AE
+#define ICON_WIFI_OFF   "\xEE\x86\xAF"   // wifi-off U+E1AF
 #define ICON_BT         "\xEE\x81\x9C"   // bluetooth U+E05C
 #define ICON_BATTERY    "\xEE\x81\x97"   // battery-medium U+E057
 #define ICON_CAMERA     "\xEE\x81\xA4"   // camera U+E064
@@ -47,3 +48,8 @@ LV_FONT_DECLARE(font_num_13b);
 #define ICON_MONITOR    "\xEE\x84\x9D"   // monitor U+E11D
 #define ICON_INFO       "\xEE\x83\xB9"   // info U+E0F9
 #define ICON_USER       "\xEE\x86\x9F"   // user U+E19F
+#define ICON_BATTERY_CHARGIN "\xEE\x81\x94"   // battery-charging U+E054
+#define ICON_BATTERY_FULL "\xEE\x81\x95"   // battery-full U+E055
+#define ICON_BATTERY_MEDIUM "\xEE\x81\x97"   // battery-medium U+E057
+#define ICON_BATTERY_LOW "\xEE\x81\x96"   // battery-low U+E056
+#define ICON_PLUG       "\xEE\x91\x9C"   // plug-zap U+E45C

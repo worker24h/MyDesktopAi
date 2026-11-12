@@ -29,6 +29,7 @@ RIGHT       chevron-right
 TARGET      crosshair
 ARM         grab
 WIFI        wifi
+WIFI_OFF    wifi-off
 BT          bluetooth
 BATTERY     battery-medium
 CAMERA      camera
@@ -39,3 +40,8 @@ SUN         sun
 MONITOR     monitor
 INFO        info
 USER        user
+BATTERY_CHARGIN    battery-charging
+BATTERY_FULL       battery-full
+BATTERY_MEDIUM     battery-medium
+BATTERY_LOW        battery-low
+PLUG               plug-zap

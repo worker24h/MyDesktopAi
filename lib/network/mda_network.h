@@ -15,12 +15,12 @@
 // STA：用配置去连接路由器，连不上或断线时自动重试，不影响 AP。
 // 注意：芯片只有一套射频，STA 连上路由器后 AP 会切到路由器的信道，热点上的设备可能短暂断开重连。
 
-enum class WifiStaState : uint8_t {
-  NotConfigured,  // 没有 STA 配置
-  Connecting,     // 正在连接
-  Connected,      // 已连接并拿到 IP
-  Failed,         // 连接失败或断线，等待自动重试
-  Stopped,        // 连续 3 次连接失败，不再重试（重新保存配置或重启后再试）
+enum WifiStaState {
+  NotConfigured = 0,  // 没有 STA 配置
+  Connecting = 1,     // 正在连接
+  Connected = 2,      // 已连接并拿到 IP
+  Failed = 3,         // 连接失败或断线，等待自动重试
+  Stopped = 4,        // 连续 3 次连接失败，不再重试（重新保存配置或重启后再试）
 };
 
 struct WifiStaStatus {

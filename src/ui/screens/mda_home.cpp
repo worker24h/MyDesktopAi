@@ -47,6 +47,7 @@ static void create_left(lv_obj_t *scr) {
 
   lv_obj_t *greet = lv_label_create(bubble);
   lv_obj_add_style(greet, &st_text, 0);
+  lv_obj_set_style_text_font(greet, &font_cn_11b, 0);
   lv_obj_set_style_text_align(greet, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_style_text_line_space(greet, 3, 0);
   lv_label_set_text(greet, "你好呀！\n今天想和我玩什么？");
@@ -88,6 +89,7 @@ static lv_obj_t *create_tile(lv_obj_t *parent, const TileDef &def) {
   lv_obj_center(icon);
 
   lv_obj_t *label = lv_label_create(tile);
+  lv_obj_set_style_text_font(label, &font_cn_11b, 0);
   lv_label_set_text(label, def.text);
 
   return tile;

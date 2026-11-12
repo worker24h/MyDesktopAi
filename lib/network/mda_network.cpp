@@ -8,7 +8,7 @@ static const uint8_t STA_MAX_ATTEMPTS = 3;             // 连续失败这么多�
 
 static String staSsid;
 static String staPassword;
-static volatile WifiStaState staState = WifiStaState::NotConfigured;
+static volatile WifiStaState staState = NotConfigured;
 static volatile uint8_t staLastReason = 0;
 static volatile uint32_t staFailedAt = 0;
 // 本轮已发起的连接次数。在 staBegin() 里计数（而不是按断开事件计数），
@@ -19,7 +19,7 @@ static volatile uint8_t staAttempts = 0;
 static void on_ap_sta_event(arduino_event_id_t event, arduino_event_info_t info) {
   switch (event) {
     case ARDUINO_EVENT_WIFI_STA_GOT_IP: {
-      staState = WifiStaState::Connected;
+      staState = Connected;
       staLastReason = 0;
       staAttempts = 0;  // 连上后清零，之后断线可以再重试 3 次
       logger.info("wifi", "STA connected to \"%s\", ip=%s rssi=%d", WiFi.SSID().c_str(),
@@ -32,12 +32,12 @@ static void on_ap_sta_event(arduino_event_id_t event, arduino_event_info_t info)
       if (reason == WIFI_REASON_ASSOC_LEAVE || reason == WIFI_REASON_STA_LEAVING) {
         break;
       }
-      if (staState == WifiStaState::NotConfigured) {
+      if (staState == NotConfigured) {
         break;
       }
       staLastReason = reason;
       staFailedAt = millis();
-      staState = WifiStaState::Failed;
+      staState = Failed;
       // 事件在 WiFi 任务中执行，SSID 取事件自带的数据，不读 staSsid（主任务可能正在修改它）
       char ssid[33] = {0};
       uint8_t len = info.wifi_sta_disconnected.ssid_len;
@@ -66,7 +66,7 @@ static void on_ap_sta_event(arduino_event_id_t event, arduino_event_info_t info)
 
 static void sta_begin() {
   staAttempts = staAttempts + 1;
-  staState = WifiStaState::Connecting;
+  staState = Connecting;
   logger.info("wifi", "STA connecting to \"%s\" (%s), attempt %u/%u", staSsid.c_str(),
               staPassword.length() ? "WPA" : "open", staAttempts, STA_MAX_ATTEMPTS);
   if (staPassword.length() > 0) {
@@ -104,8 +104,8 @@ bool wifi_start_ap_sta(const char *apSsid, const char *apPassword) {
 void wifi_sta_connect(const char *ssid, const char *password) {
   // 先断开当前 STA 连接（不关闭 WiFi，不影响 AP）
   WifiStaState prev = staState;
-  staState = WifiStaState::NotConfigured;
-  if (prev != WifiStaState::NotConfigured) {
+  staState = NotConfigured;
+  if (prev != NotConfigured) {
     WiFi.disconnect(false, false);
   }
 
@@ -122,11 +122,11 @@ void wifi_sta_connect(const char *ssid, const char *password) {
 }
 
 void wifi_sta_loop() {
-  if (staState != WifiStaState::Failed) {
+  if (staState != Failed) {
     return;
   }
   if (staAttempts >= STA_MAX_ATTEMPTS) {
-    staState = WifiStaState::Stopped;
+    staState = Stopped;
     logger.error("wifi", "STA failed %u times, stop retrying. Save the config again or reboot to retry",
                  STA_MAX_ATTEMPTS);
     return;
@@ -147,11 +147,11 @@ WifiStaStatus wifi_sta_get_status() {
   st.maxAttempts = STA_MAX_ATTEMPTS;
   st.lastReason = staLastReason;
   st.lastReasonName = staLastReason ? WiFi.disconnectReasonName((wifi_err_reason_t)staLastReason) : "";
-  if (st.state == WifiStaState::Connected) {
+  if (st.state == Connected) {
     st.ip = WiFi.localIP().toString();
     st.rssi = WiFi.RSSI();
   }
-  if (st.state == WifiStaState::Failed && staAttempts < STA_MAX_ATTEMPTS) {
+  if (st.state == Failed && staAttempts < STA_MAX_ATTEMPTS) {
     uint32_t elapsed = millis() - staFailedAt;
     st.retryInMs = elapsed < STA_RETRY_INTERVAL_MS ? STA_RETRY_INTERVAL_MS - elapsed : 0;
   }
@@ -160,19 +160,19 @@ WifiStaStatus wifi_sta_get_status() {
 
 const char *wifi_sta_state_name(WifiStaState state) {
   switch (state) {
-    case WifiStaState::NotConfigured: {
+    case NotConfigured: {
       return "not_configured";
     }
-    case WifiStaState::Connecting: {
+    case Connecting: {
       return "connecting";
     }
-    case WifiStaState::Connected: {
+    case Connected: {
       return "connected";
     }
-    case WifiStaState::Failed: {
+    case Failed: {
       return "failed";
     }
-    case WifiStaState::Stopped: {
+    case Stopped: {
       return "stopped";
     }
     default: {
