@@ -3,11 +3,12 @@
 #include "lvgl.h"
 
 LV_FONT_DECLARE(font_cn_11);
+LV_FONT_DECLARE(font_cn_11b);
 LV_FONT_DECLARE(font_cn_14);
 LV_FONT_DECLARE(font_cn_18);
 LV_FONT_DECLARE(font_num_13b);
 
-// Lucide 图标（UTF-8 字符串），font_cn_11/14/18 都包含（font_num_13b 没有），用法：lv_label_set_text(lbl, ICON_HOME);
+// Lucide 图标（UTF-8 字符串），font_cn_11/11b/14/18 都包含（font_num_13b 没有），用法：lv_label_set_text(lbl, ICON_HOME);
 #define ICON_HOME       "\xEE\x83\xB5"   // house U+E0F5
 #define ICON_SMILE      "\xEE\x85\xA4"   // smile U+E164
 #define ICON_MIC        "\xEE\x84\x98"   // mic U+E118

@@ -74,18 +74,20 @@ make_fonts() {
   common=$(cat "$BUILD/chars_common.txt")
   icons=$(cat "$BUILD/icon_ranges.txt")
 
-  # 3. 生成三个字号：ASCII + 中文 + 图标
+  # 3. 生成中文字体：ASCII + 中文 + 图标
   #    14px 用于正文和 AI 对话，额外加入常用字；11px / 18px 只放界面里用到的字
-  gen() {   # gen <字号> <中文字符>
-    echo "生成 font_cn_$1.c ..."
-    $FONT_CONV --bpp 4 --size "$1" --format lvgl --no-compress --lv-include lvgl.h \
-      --font "$CN_FONT" -r 0x20-0x7E --symbols "$2" \
+  #    带 b 后缀的是粗体（设计稿里入口块、按钮、气泡、标签等大多是 font-weight:600）
+  gen() {   # gen <输出名> <字体文件> <字号> <中文字符>
+    echo "生成 $1.c ..."
+    $FONT_CONV --bpp 4 --size "$3" --format lvgl --no-compress --lv-include lvgl.h \
+      --font "$2" -r 0x20-0x7E --symbols "$4" \
       --font "$ICON_FONT" -r "$icons" \
-      -o "$FONT_OUT/font_cn_$1.c"
+      -o "$FONT_OUT/$1.c"
   }
-  gen 11 "$ui"
-  gen 14 "$ui$common"
-  gen 18 "$ui"
+  gen font_cn_11  "$CN_FONT"      11 "$ui"
+  gen font_cn_11b "$CN_BOLD_FONT" 11 "$ui"
+  gen font_cn_14  "$CN_FONT"      14 "$ui$common"
+  gen font_cn_18  "$CN_FONT"      18 "$ui"
 
   # 4. 粗体数字字体：只有 ASCII 和 °，用于状态栏时间、角度、温度等数字（设计稿是粗体）
   #    中文字体里的数字比汉字小一圈，所以字号比正文大 2px，视觉上才和 11px 汉字差不多

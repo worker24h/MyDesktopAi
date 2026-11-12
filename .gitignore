@@ -9,5 +9,5 @@ tools/.venv/
 .DS_Store
 
 # 字体素材：下载的字体文件、中间文件
-tools/assets/fonts/
+#tools/assets/fonts/
 tools/build/
