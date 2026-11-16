@@ -3,12 +3,13 @@
 
 #include <lvgl.h>
 
-typedef struct t_mda_menu_data {
-    lv_obj_t *page_home;
-    lv_obj_t *page_smile;
-    lv_obj_t *page_mic;
-    lv_obj_t *page_settings;
-}t_mda_menu_data;
+// 菜单栏 4 个图标对应的页面；还没实现的页面为 nullptr，点击时只忽略不切换
+typedef struct mda_pages_t {
+    lv_obj_t *home = nullptr;
+    lv_obj_t *smile = nullptr;
+    lv_obj_t *mic = nullptr;
+    lv_obj_t *settings = nullptr;
+}mda_pages_t;
 
 
 /**
