@@ -1,0 +1,7 @@
+
+# 固件模式
+- pio run
+- pio run -t upload
+
+# 仿真模式
+- pio run -e sim && .pio/build/sim/program
