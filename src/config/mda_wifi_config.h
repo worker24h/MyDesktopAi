@@ -4,14 +4,14 @@
 #include <Arduino.h>
 
 // STA（连接路由器）用的 WiFi 配置，保存在 SD 卡 /data/config/wifi.json：
-//   { "ssid": "MyWiFi", "password": "xxxx" }
+//     { "ssid": "MyWiFi", "password": "xxxx" }
 // 密码为空表示 Open 网络。密码以明文保存。
 
 #define MDA_WIFI_CONFIG_PATH "/data/config/wifi.json"
 
 struct WifiConfig {
-  String ssid;
-  String password;
+    String ssid;
+    String password;
 };
 
 // 读取配置。文件不存在、格式错误或 ssid 为空时返回 false。

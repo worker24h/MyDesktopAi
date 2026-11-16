@@ -89,7 +89,17 @@ make_fonts() {
   gen font_cn_14  "$CN_FONT"      14 "$ui$common"
   gen font_cn_18  "$CN_FONT"      18 "$ui"
 
-  # 4. 粗体数字字体：只有 ASCII 和 °，用于状态栏时间、角度、温度等数字（设计稿是粗体）
+  # 4. 纯图标字体：只有 Lucide 图标，没有中文，体积很小。用于底部菜单栏这类需要大一号图标的地方
+  gen_icon() {   # gen_icon <字号>
+    echo "生成 font_icon_$1.c ..."
+    $FONT_CONV --bpp 4 --size "$1" --format lvgl --no-compress --lv-include lvgl.h \
+      --font "$ICON_FONT" -r "$icons" \
+      -o "$FONT_OUT/font_icon_$1.c"
+  }
+  gen_icon 20
+  gen_icon 24
+
+  # 5. 粗体数字字体：只有 ASCII 和 °，用于状态栏时间、角度、温度等数字（设计稿是粗体）
   #    中文字体里的数字比汉字小一圈，所以字号比正文大 2px，视觉上才和 11px 汉字差不多
   echo "生成 font_num_13b.c ..."
   $FONT_CONV --bpp 4 --size 13 --format lvgl --no-compress --lv-include lvgl.h \
