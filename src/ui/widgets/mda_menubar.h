@@ -1,8 +1,9 @@
-#ifndef MDA_STATUSBAR_H
-#define MDA_STATUSBAR_H
+#ifndef MDA_MENUBAR_H
+#define MDA_MENUBAR_H
 
 #include "lvgl.h"
-void mda_menubar_create(lv_obj_t *parent);
+
+lv_obj_t *mda_menubar_create();
 
 
 #endif

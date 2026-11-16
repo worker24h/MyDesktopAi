@@ -93,7 +93,6 @@ void mda_statusbar_create() {
     mda_time_create(status_bar);
     mda_wifi_create(status_bar);
     mda_battery_create(status_bar);
-
 }
 
 

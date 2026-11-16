@@ -3,10 +3,8 @@
 #include "mda_screens.h"
 #include "../mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
-#include "../widgets/mda_menubar.h"
 
 //声明图片
-LV_IMAGE_DECLARE(bg_main);
 LV_IMAGE_DECLARE(robot_happy_L);
 LV_IMAGE_DECLARE(robot_happy_S);
 
@@ -118,15 +116,9 @@ static void create_tiles(lv_obj_t *scr) {
 lv_obj_t *mda_home_create() {
     lv_obj_t *scr = lv_obj_create(NULL);
     no_scroll(scr);
-
-    // 背景图铺满全屏
-    lv_obj_t *bg = lv_image_create(scr);
-    lv_image_set_src(bg, &bg_main);
-    lv_obj_set_pos(bg, 0, 0);
-
+    lv_obj_set_style_bg_opa(scr, LV_OPA_TRANSP, 0); //设置透明
     create_left(scr);
     create_tiles(scr);
 
-    mda_menubar_create(scr);
     return scr;
 }

@@ -34,8 +34,9 @@ static void mda_menubar_icon_set_active(lv_event_t * e) {
     }
 }
 
-void mda_menubar_create(lv_obj_t *parent) {
-    lv_obj_t *menubar = lv_obj_create(parent);
+lv_obj_t *mda_menubar_create() {
+    // 放在 top 层：盖在所有页面上面，切页面不用重建；放 bottom 层会被页面挡住，点击也收不到
+    lv_obj_t *menubar = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(menubar);                        // 去掉默认主题的白底、边框、内边距
     lv_obj_add_style(menubar, &st_card_strong, 0);
     lv_obj_set_style_bg_opa(menubar, LV_OPA_40, 0);          // 背景不透明度 40%（0~255，可用 LV_OPA_0..LV_OPA_100）
@@ -53,7 +54,7 @@ void mda_menubar_create(lv_obj_t *parent) {
     lv_obj_add_event_cb(home, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
     icon_actived = home;
 
-    smile =mda_menubar_icon_create(menubar, ICON_SMILE);
+    smile = mda_menubar_icon_create(menubar, ICON_SMILE);
     lv_obj_add_event_cb(smile, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
 
     mic = mda_menubar_icon_create(menubar, ICON_MIC);
@@ -61,5 +62,7 @@ void mda_menubar_create(lv_obj_t *parent) {
 
     settings = mda_menubar_icon_create(menubar, ICON_SETTINGS);
     lv_obj_add_event_cb(settings, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
+
+    return menubar;
 }
 
