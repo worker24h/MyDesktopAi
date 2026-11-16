@@ -32,9 +32,8 @@ static lv_obj_t *s_battery_label = nullptr;
 // 根据当前电源状态选图标和颜色
 static void mda_battery_update(lv_obj_t *battery_label) {
     lv_obj_set_style_text_color(battery_label, lv_color_hex(MDA_INK), 0); //默认颜色
-    if (!M5.Power.Axp2101.getBatState()) {
-        // 没检测到电池（拔掉/开关关闭/过放保护）时 getBatteryLevel() 返回 0，不能当成低电量
-        lv_label_set_text(battery_label, ICON_PLUG);
+    if (M5.Power.getVBUSVoltage() > 4000 && !M5.Power.getUsbOutput()) {// 说明是外接电源供电, 且不是输出
+        lv_label_set_text(battery_label, ICON_BATTERY_FULL);
         return;
     }
     if (M5.Power.isCharging() == m5::Power_Class::is_charging) {
