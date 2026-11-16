@@ -25,16 +25,26 @@ static lv_obj_t *mda_menubar_icon_create(lv_obj_t *parent, const char *icon) {
 
 
 static void mda_menubar_icon_set_active(lv_event_t * e) {
-    printf("Clicked\n");
     lv_obj_t *icon = (lv_obj_t *)lv_event_get_target(e);
+    t_mda_menu_data *menu_data = (t_mda_menu_data *)lv_event_get_user_data(e); 
     if (icon != icon_actived) {
         lv_obj_set_style_text_color(icon, lv_color_hex(MDA_PINK), 0);
         lv_obj_set_style_text_color(icon_actived, lv_color_hex(MDA_NAV_OFF), 0); //将上一个恢复成默认颜色
         icon_actived = icon;//保存当前活跃
+        if (icon_actived == home) {
+            lv_scr_load(menu_data->page_home);
+        } else if (icon_actived == smile) {
+            lv_scr_load(menu_data->page_smile);
+        } else if (icon_actived == mic) {
+            lv_scr_load(menu_data->page_mic);
+        } else {
+            lv_scr_load(menu_data->page_settings);
+        }
     }
+
 }
 
-lv_obj_t *mda_menubar_create() {
+lv_obj_t *mda_menubar_create(t_mda_menu_data *menu_data) {
     // 放在 top 层：盖在所有页面上面，切页面不用重建；放 bottom 层会被页面挡住，点击也收不到
     lv_obj_t *menubar = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(menubar);                        // 去掉默认主题的白底、边框、内边距
@@ -51,17 +61,17 @@ lv_obj_t *mda_menubar_create() {
 
     home = mda_menubar_icon_create(menubar, ICON_HOME);
     lv_obj_set_style_text_color(home, lv_color_hex(MDA_PINK), 0);  // 当前页高亮
-    lv_obj_add_event_cb(home, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(home, mda_menubar_icon_set_active, LV_EVENT_CLICKED, menu_data);
     icon_actived = home;
 
     smile = mda_menubar_icon_create(menubar, ICON_SMILE);
-    lv_obj_add_event_cb(smile, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(smile, mda_menubar_icon_set_active, LV_EVENT_CLICKED, menu_data);
 
     mic = mda_menubar_icon_create(menubar, ICON_MIC);
-    lv_obj_add_event_cb(mic, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(mic, mda_menubar_icon_set_active, LV_EVENT_CLICKED, menu_data);
 
     settings = mda_menubar_icon_create(menubar, ICON_SETTINGS);
-    lv_obj_add_event_cb(settings, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(settings, mda_menubar_icon_set_active, LV_EVENT_CLICKED, menu_data);
 
     return menubar;
 }

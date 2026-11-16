@@ -1,4 +1,4 @@
-// 首页：左边问候气泡 + 机器人，右边 2×2 入口块（设计稿 5.1 节）
+
 #include <lvgl.h>
 #include "mda_screens.h"
 #include "../mda_theme.h"
