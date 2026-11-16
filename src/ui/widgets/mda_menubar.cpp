@@ -1,17 +1,37 @@
-
+#include <stdio.h>
 #include "mda_menubar.h"
 #include "../mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
+
+static lv_obj_t *icon_actived = NULL; // 当前高亮的图标
+static lv_obj_t *home;
+static lv_obj_t *smile;
+static lv_obj_t *mic;
+static lv_obj_t *settings;
 
 /**
  * 创建一个菜单图标。位置由父容器的 flex 布局决定，这里不用 lv_obj_align
  */
 static lv_obj_t *mda_menubar_icon_create(lv_obj_t *parent, const char *icon) {
     lv_obj_t *label = lv_label_create(parent);
-    lv_label_set_text(label, icon);
+    lv_obj_add_flag(label, LV_OBJ_FLAG_CLICKABLE); // label默认不支持click事件
+    lv_obj_set_ext_click_area(label, 8); //图标太小，扩大click区域
+    lv_label_set_text(label, icon); // 设置icon
     // 纯图标字体：行高等于字号，没有中文字体基线下方的空白，flex 居中后图标就在正中间
     lv_obj_set_style_text_font(label, &font_icon_24, 0);
+    lv_obj_set_style_text_color(label, lv_color_hex(MDA_NAV_OFF), 0);
     return label;
+}
+
+
+static void mda_menubar_icon_set_active(lv_event_t * e) {
+    printf("Clicked\n");
+    lv_obj_t *icon = (lv_obj_t *)lv_event_get_target(e);
+    if (icon != icon_actived) {
+        lv_obj_set_style_text_color(icon, lv_color_hex(MDA_PINK), 0);
+        lv_obj_set_style_text_color(icon_actived, lv_color_hex(MDA_NAV_OFF), 0); //将上一个恢复成默认颜色
+        icon_actived = icon;//保存当前活跃
+    }
 }
 
 void mda_menubar_create(lv_obj_t *parent) {
@@ -28,11 +48,18 @@ void mda_menubar_create(lv_obj_t *parent) {
     lv_obj_set_flex_flow(menubar, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(menubar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    lv_obj_t *home = mda_menubar_icon_create(menubar, ICON_HOME);
+    home = mda_menubar_icon_create(menubar, ICON_HOME);
     lv_obj_set_style_text_color(home, lv_color_hex(MDA_PINK), 0);  // 当前页高亮
+    lv_obj_add_event_cb(home, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
+    icon_actived = home;
 
-    mda_menubar_icon_create(menubar, ICON_SMILE);
-    mda_menubar_icon_create(menubar, ICON_MIC);
-    mda_menubar_icon_create(menubar, ICON_SETTINGS);
+    smile =mda_menubar_icon_create(menubar, ICON_SMILE);
+    lv_obj_add_event_cb(smile, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
+
+    mic = mda_menubar_icon_create(menubar, ICON_MIC);
+    lv_obj_add_event_cb(mic, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
+
+    settings = mda_menubar_icon_create(menubar, ICON_SETTINGS);
+    lv_obj_add_event_cb(settings, mda_menubar_icon_set_active, LV_EVENT_CLICKED, NULL);
 }
 
