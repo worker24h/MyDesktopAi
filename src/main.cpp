@@ -59,10 +59,10 @@ void setup() {
     webfs_setup();
     web_wifi_setup();
 
-    Serial.printf("芯片: %s，%d 核，%d MHz\n", ESP.getChipModel(), ESP.getChipCores(), ESP.getCpuFreqMHz());
-    Serial.printf("内部 SRAM 剩余: %u KB\n", ESP.getFreeHeap() / 1024);
-    Serial.printf("PSRAM 总共: %u KB，剩余: %u KB\n", ESP.getPsramSize() / 1024, ESP.getFreePsram() / 1024);
-    Serial.printf("Flash: %u MB\n", ESP.getFlashChipSize() / 1024 / 1024);
+    // Serial.printf("芯片: %s，%d 核，%d MHz\n", ESP.getChipModel(), ESP.getChipCores(), ESP.getCpuFreqMHz());
+    // Serial.printf("内部 SRAM 剩余: %u KB\n", ESP.getFreeHeap() / 1024);
+    // Serial.printf("PSRAM 总共: %u KB，剩余: %u KB\n", ESP.getPsramSize() / 1024, ESP.getFreePsram() / 1024);
+    // Serial.printf("Flash: %u MB\n", ESP.getFlashChipSize() / 1024 / 1024);
 
     mda_lvgl_initilaized();
     ui_init();
