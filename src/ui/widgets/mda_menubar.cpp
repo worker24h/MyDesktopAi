@@ -48,8 +48,12 @@ static void mda_menubar_icon_set_active(lv_event_t *e) {
     // 3. 页面存在：先切高亮，再切页面
     lv_obj_set_style_text_color(icon_actived, lv_color_hex(MDA_NAV_OFF), 0);    // 上一个恢复默认颜色
     lv_obj_set_style_text_color(icon, lv_color_hex(MDA_PINK), 0);
+    //动画效果切换页面
+    lv_screen_load_anim_t anim = (lv_obj_get_index(icon) > lv_obj_get_index(icon_actived))
+                             ? LV_SCR_LOAD_ANIM_MOVE_LEFT
+                             : LV_SCR_LOAD_ANIM_MOVE_RIGHT;
+    lv_screen_load_anim(target, anim, 300, 0, false);
     icon_actived = icon;
-    lv_screen_load(target);
 }
 
 lv_obj_t *mda_menubar_create(mda_pages_t *pages) {
