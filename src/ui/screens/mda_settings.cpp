@@ -20,18 +20,22 @@ static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const mda_settings_ro
 
     lv_obj_set_style_border_side(row, LV_BORDER_SIDE_BOTTOM, 0);
     lv_obj_set_style_border_width(row, 1, 0);
-    lv_obj_set_style_border_color(row, lv_color_hex(MDA_LINE), 0);
+    lv_obj_set_style_border_color(row, lv_color_hex(MDA_COLOR_LINE), 0);
 
     //设置row中的内容
     lv_obj_t *icon_left = lv_obj_create(row);
     lv_obj_remove_style_all(icon_left);
+    lv_obj_remove_flag(icon_left, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(icon_left, 22, 22);
     lv_obj_set_style_radius(icon_left, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(icon_left, lv_color_hex(param.color), 0);
     lv_obj_set_style_bg_opa(icon_left, LV_OPA_COVER, 0);
     lv_obj_t *icon = lv_label_create(icon_left);
-    lv_obj_set_style_text_font(icon, &font_cn_11b, 0);
+    lv_obj_set_style_text_font(icon, &font_cn_14, 0);
+    lv_obj_set_style_text_color(icon, lv_color_hex(MDA_COLOR_WHITE), 0);
     lv_label_set_text(icon, param.icon);
     lv_obj_center(icon);
+    lv_obj_set_style_translate_y(icon, 2, 0); //往下挪2个像素，垂直居中
 
     lv_obj_t *text = lv_label_create(row);
     lv_obj_add_style(text, &st_text, 0);
@@ -41,23 +45,28 @@ static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const mda_settings_ro
 
     // >箭头
     lv_obj_t *icon_arrow = lv_label_create(row);
+    lv_label_set_text(icon_arrow, ICON_RIGHT);
     lv_obj_set_style_text_font(icon_arrow, &font_cn_11, 0);
-    lv_obj_set_style_bg_color(icon_arrow, lv_color_hex(param.color), 0);
+    lv_obj_set_style_bg_color(icon_arrow, lv_color_hex(0x9AA0BF), 0);
 
     return row;
 }
 
-static void mda_control_panel(lv_obj_t *parent) {
-    static const mda_settings_row_def_t controls[] = {
-        {ICON_SMILE, MDA_YELLOW, "角色与表情"},
-        {ICON_VOLUME, MDA_BLUE, "音量"},
-        {ICON_SUN, MDA_VIOLET, "亮度"},
-        {ICON_WIFI, MDA_OK, "网络与链接"},
-        {ICON_INFO, MDA_GREEN, "关于设备"}
+static void mda_settings_list_create(lv_obj_t *parent) {
+    constexpr int max_size = 5;
+    static const mda_settings_row_def_t controls[max_size] = {
+        {ICON_SMILE, MDA_COLOR_YELLOW, "角色与表情"},
+        {ICON_VOLUME, MDA_COLOR_BLUE, "音量"},
+        {ICON_SUN, MDA_COLOR_VIOLET, "亮度"},
+        {ICON_WIFI, MDA_COLOR_OK, "网络与链接"},
+        {ICON_INFO, MDA_COLOR_GREEN, "关于设备"}
     };
 
-    for (int i = 0; i < 5; i++) {
-        mda_settings_row_create(parent, controls[i]);
+    for (int i = 0; i < max_size; i++) {
+        lv_obj_t *row = mda_settings_row_create(parent, controls[i]);
+        if (i == max_size - 1) {//最后一行不设置，border=1
+            lv_obj_set_style_border_width(row, 0, 0);
+        }
     }
 }
 
@@ -77,7 +86,7 @@ lv_obj_t *mda_settings_create() {
     lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN); // 使用flow，列排列
     lv_obj_remove_flag(card, LV_OBJ_FLAG_SCROLLABLE);
 
-    mda_control_panel(card);
+    mda_settings_list_create(card);
 
     return settings;
 }

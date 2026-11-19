@@ -20,10 +20,10 @@ static void mda_wifi_event_cb(lv_timer_t *timer) {
     lv_obj_t *wifi_label = (lv_obj_t *)lv_timer_get_user_data(timer);
     if (wifi_sta_get_status().state == Connected) {
         lv_label_set_text(wifi_label, ICON_WIFI);
-        lv_obj_set_style_text_color(wifi_label, lv_color_hex(MDA_INK), 0);
+        lv_obj_set_style_text_color(wifi_label, lv_color_hex(MDA_COLOR_INK), 0);
     } else {
         lv_label_set_text(wifi_label, ICON_WIFI_OFF);
-        lv_obj_set_style_text_color(wifi_label, lv_color_hex(MDA_RED), 0);    // 断网显示红色
+        lv_obj_set_style_text_color(wifi_label, lv_color_hex(MDA_COLOR_RED), 0);    // 断网显示红色
     }
     return;
 }
@@ -31,21 +31,21 @@ static void mda_wifi_event_cb(lv_timer_t *timer) {
 // 使用icon svg
 static void mda_wifi_create(lv_obj_t *parent) {
     lv_obj_t *wifi_label = lv_label_create(parent);
-    lv_obj_add_style(wifi_label, &st_text, 0);                             // 默认颜色用 MDA_INK
+    lv_obj_add_style(wifi_label, &st_text, 0);                             // 默认颜色用 MDA_COLOR_INK
     lv_obj_set_style_text_font(wifi_label, &font_icon_20, 0);             // 图标字体覆盖 st_text 里的字体
     lv_obj_align(wifi_label, LV_ALIGN_RIGHT_MID, -40, 0);
     if (wifi_sta_get_status().state == Connected) {
         lv_label_set_text(wifi_label, ICON_WIFI);
     } else {
         lv_label_set_text(wifi_label, ICON_WIFI_OFF);
-        lv_obj_set_style_text_color(wifi_label, lv_color_hex(MDA_RED), 0);    // 断网显示红色
+        lv_obj_set_style_text_color(wifi_label, lv_color_hex(MDA_COLOR_RED), 0);    // 断网显示红色
     }
     lv_timer_create(mda_wifi_event_cb, TIME_WIFI_REFRESH_MS, wifi_label);
 }
 
 // 根据当前电源状态选图标和颜色
 static void mda_battery_update(lv_obj_t *battery_label) {
-    lv_obj_set_style_text_color(battery_label, lv_color_hex(MDA_INK), 0); //默认颜色
+    lv_obj_set_style_text_color(battery_label, lv_color_hex(MDA_COLOR_INK), 0); //默认颜色
     if (M5.Power.getVBUSVoltage() > 4000 && !M5.Power.getUsbOutput()) {// 说明是外接电源供电, 且不是输出
         lv_label_set_text(battery_label, ICON_BATTERY_FULL);
         return;
@@ -60,7 +60,7 @@ static void mda_battery_update(lv_obj_t *battery_label) {
             lv_label_set_text(battery_label, ICON_BATTERY_MEDIUM);
         } else {
             lv_label_set_text(battery_label, ICON_BATTERY_LOW);
-            lv_obj_set_style_text_color(battery_label, lv_color_hex(MDA_RED), 0);    // 电量低显示红色
+            lv_obj_set_style_text_color(battery_label, lv_color_hex(MDA_COLOR_RED), 0);    // 电量低显示红色
         }
     }
 }
@@ -75,7 +75,7 @@ static void mda_battery_event_cb(lv_timer_t *timer) {
 
 static void mda_battery_create(lv_obj_t *parent) {
     lv_obj_t *s_battery_label = lv_label_create(parent);
-    lv_obj_add_style(s_battery_label, &st_text, 0);                                    // 默认颜色用 MDA_INK
+    lv_obj_add_style(s_battery_label, &st_text, 0);                                    // 默认颜色用 MDA_COLOR_INK
     lv_obj_set_style_text_font(s_battery_label, &font_icon_24, 0);         // 电池图标偏扁，用 18px 才看得清
     lv_obj_align(s_battery_label, LV_ALIGN_RIGHT_MID, -10, 0);
 
@@ -101,7 +101,7 @@ static void mda_time_create(lv_obj_t *parent) {
         strncpy(buf, "--:--", 6);
     }
     lv_obj_t *time_label = lv_label_create(parent);
-    lv_obj_add_style(time_label, &st_text, 0);                                        // 颜色用 MDA_INK
+    lv_obj_add_style(time_label, &st_text, 0);                                        // 颜色用 MDA_COLOR_INK
     lv_obj_set_style_text_font(time_label, &font_num_13b, 0);         // 字体换成粗体数字，覆盖 st_text 里的字体
     lv_label_set_text(time_label, buf);
     lv_obj_align(time_label, LV_ALIGN_LEFT_MID, 10, 0);

@@ -13,7 +13,7 @@ static constexpr lv_opa_t opa(int percent) {
  * 设计稿的公共阴影：box-shadow: 0 4px 12px rgba(110,100,200,.16)
  */
 static void set_shadow(lv_style_t *st) {
-    lv_style_set_shadow_color(st, lv_color_hex(MDA_SHADOW));
+    lv_style_set_shadow_color(st, lv_color_hex(MDA_COLOR_SHADOW));
     lv_style_set_shadow_opa(st, opa(16));
     lv_style_set_shadow_width(st, 12);
     lv_style_set_shadow_offset_y(st, 4);
@@ -75,7 +75,7 @@ void theme_init() {
     set_shadow(&st_tile);
     lv_style_set_pad_all(&st_tile, 0);
     lv_style_set_text_font(&st_tile, &font_cn_11);
-    lv_style_set_text_color(&st_tile, lv_color_hex(MDA_INK));
+    lv_style_set_text_color(&st_tile, lv_color_hex(MDA_COLOR_INK));
 
     // 图标方块 = 设计稿 .tile .ic；颜色由叠加的 st_grad_xxx 决定
     lv_style_init(&st_icon_box);
@@ -84,13 +84,13 @@ void theme_init() {
     lv_style_set_pad_all(&st_icon_box, 0);
     lv_style_set_text_color(&st_icon_box, lv_color_white());
 
-    init_grad(&st_grad_pink, MDA_PINK_L, MDA_PINK);
-    init_grad(&st_grad_blue, MDA_BLUE_L, MDA_BLUE);
-    init_grad(&st_grad_green, MDA_GREEN_L, MDA_GREEN);
-    init_grad(&st_grad_violet, MDA_VIOLET_L, MDA_VIOLET);
+    init_grad(&st_grad_pink, MDA_COLOR_PINK_L, MDA_COLOR_PINK);
+    init_grad(&st_grad_blue, MDA_COLOR_BLUE_L, MDA_COLOR_BLUE);
+    init_grad(&st_grad_green, MDA_COLOR_GREEN_L, MDA_COLOR_GREEN);
+    init_grad(&st_grad_violet, MDA_COLOR_VIOLET_L, MDA_COLOR_VIOLET);
 
     // 文字
-    init_text(&st_text, &font_cn_11, MDA_INK);
-    init_text(&st_text2, &font_cn_11, MDA_INK2);
-    init_text(&st_title, &font_cn_18, MDA_INK);
+    init_text(&st_text, &font_cn_11, MDA_COLOR_INK);
+    init_text(&st_text2, &font_cn_11, MDA_COLOR_INK2);
+    init_text(&st_title, &font_cn_18, MDA_COLOR_INK);
 }

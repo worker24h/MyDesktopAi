@@ -19,7 +19,7 @@ static lv_obj_t *mda_menubar_icon_create(lv_obj_t *parent, const char *icon) {
     lv_label_set_text(label, icon); // 设置icon
     // 纯图标字体：行高等于字号，没有中文字体基线下方的空白，flex 居中后图标就在正中间
     lv_obj_set_style_text_font(label, &font_icon_24, 0);
-    lv_obj_set_style_text_color(label, lv_color_hex(MDA_NAV_OFF), 0);
+    lv_obj_set_style_text_color(label, lv_color_hex(MDA_COLOR_NAV_OFF), 0);
     return label;
 }
 
@@ -46,8 +46,8 @@ static void mda_menubar_icon_set_active(lv_event_t *e) {
     }
 
     // 3. 页面存在：先切高亮，再切页面
-    lv_obj_set_style_text_color(icon_actived, lv_color_hex(MDA_NAV_OFF), 0);    // 上一个恢复默认颜色
-    lv_obj_set_style_text_color(icon, lv_color_hex(MDA_PINK), 0);
+    lv_obj_set_style_text_color(icon_actived, lv_color_hex(MDA_COLOR_NAV_OFF), 0);    // 上一个恢复默认颜色
+    lv_obj_set_style_text_color(icon, lv_color_hex(MDA_COLOR_PINK), 0);
     //动画效果切换页面
     lv_screen_load_anim_t anim = (lv_obj_get_index(icon) > lv_obj_get_index(icon_actived))
                              ? LV_SCR_LOAD_ANIM_MOVE_LEFT
@@ -72,7 +72,7 @@ lv_obj_t *mda_menubar_create(mda_pages_t *pages) {
     lv_obj_set_flex_align(menubar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
     home = mda_menubar_icon_create(menubar, ICON_HOME);
-    lv_obj_set_style_text_color(home, lv_color_hex(MDA_PINK), 0);  // 当前页高亮
+    lv_obj_set_style_text_color(home, lv_color_hex(MDA_COLOR_PINK), 0);  // 当前页高亮
     lv_obj_add_event_cb(home, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
     icon_actived = home;
 

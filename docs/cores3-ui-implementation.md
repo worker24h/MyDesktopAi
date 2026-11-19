@@ -712,7 +712,7 @@ static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const char *icon, uin
   ```cpp
   lv_obj_set_style_border_side(row, LV_BORDER_SIDE_BOTTOM, 0);
   lv_obj_set_style_border_width(row, 1, 0);
-  lv_obj_set_style_border_color(row, lv_color_hex(MDA_LINE), 0);
+  lv_obj_set_style_border_color(row, lv_color_hex(MDA_COLOR_LINE), 0);
   ```
 
 **② 彩色圆形图标**
@@ -744,10 +744,10 @@ typedef struct {
 | 行 | 图标 | 颜色（设计稿） |
 |---|---|---|
 | 角色与表情 | `ICON_SMILE` | `0xFFC93C`（黄，主题里没有，直接写数字） |
-| 音量 | `ICON_VOLUME` | `MDA_BLUE` |
-| 亮度 | `ICON_SUN` | `MDA_VIOLET` |
-| 网络与连接 | `ICON_WIFI` | `MDA_OK` |
-| 关于设备 | `ICON_INFO` | `MDA_GREEN` |
+| 音量 | `ICON_VOLUME` | `MDA_COLOR_BLUE` |
+| 亮度 | `ICON_SUN` | `MDA_COLOR_VIOLET` |
+| 网络与连接 | `ICON_WIFI` | `MDA_COLOR_OK` |
+| 关于设备 | `ICON_INFO` | `MDA_COLOR_GREEN` |
 
 循环结束后，**最后一行**要去掉分隔线：`lv_obj_set_style_border_width(最后一行, 0, 0)`。可以把每次返回的行记下来，或者在循环里判断是不是最后一个。
 

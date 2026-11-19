@@ -3,21 +3,22 @@
 
 #include <lvgl.h>
 
-// 颜色：数值取自设计稿 docs/design/cores3-ui.html 的 CSS
-constexpr uint32_t MDA_INK = 0x2A2F4A,  MDA_INK2 = 0x6B7194, MDA_LINE = 0xDADCEE;
-constexpr uint32_t MDA_PINK = 0xFF5B97, MDA_PINK_L = 0xFF8FBD;
-constexpr uint32_t MDA_BLUE = 0x3D8BFF, MDA_BLUE_L = 0x7CC0FF;
-constexpr uint32_t MDA_GREEN = 0x26B773, MDA_GREEN_L = 0x6FE0A2, MDA_OK = 0x36C98A;
-constexpr uint32_t MDA_VIOLET = 0x8B7CFF, MDA_VIOLET_L = 0xB7A9FF;
-constexpr uint32_t MDA_RED = 0xFF4D6D;
-constexpr uint32_t MDA_NAV_OFF = 0x6F7598;  // 导航栏未选中图标
-constexpr uint32_t MDA_SHADOW = 0x6E64C8;   // 卡片阴影 rgba(110,100,200,.16)
-constexpr uint32_t MDA_YELLOW = 0xFFC93C;
+// 颜色：统一 MDA_COLOR_ 前缀，数值取自设计稿 docs/design/cores3-ui.html 的 CSS；使用时 lv_color_hex(MDA_COLOR_xxx)
+constexpr uint32_t MDA_COLOR_INK = 0x2A2F4A,  MDA_COLOR_INK2 = 0x6B7194, MDA_COLOR_LINE = 0xDADCEE;
+constexpr uint32_t MDA_COLOR_PINK = 0xFF5B97, MDA_COLOR_PINK_L = 0xFF8FBD;
+constexpr uint32_t MDA_COLOR_BLUE = 0x3D8BFF, MDA_COLOR_BLUE_L = 0x7CC0FF;
+constexpr uint32_t MDA_COLOR_GREEN = 0x26B773, MDA_COLOR_GREEN_L = 0x6FE0A2, MDA_COLOR_OK = 0x36C98A;
+constexpr uint32_t MDA_COLOR_VIOLET = 0x8B7CFF, MDA_COLOR_VIOLET_L = 0xB7A9FF;
+constexpr uint32_t MDA_COLOR_RED = 0xFF4D6D;
+constexpr uint32_t MDA_COLOR_NAV_OFF = 0x6F7598;  // 导航栏未选中图标
+constexpr uint32_t MDA_COLOR_SHADOW = 0x6E64C8;   // 卡片阴影 rgba(110,100,200,.16)
+constexpr uint32_t MDA_COLOR_YELLOW = 0xFFC93C;  // 设置页「角色与表情」图标底色
+constexpr uint32_t MDA_COLOR_WHITE = 0xFFFFFF;
 
 // 入口块底色
-constexpr uint32_t MDA_TILE_PINK = 0xFFD6E7, MDA_TILE_BLUE = 0xD9E8FF, MDA_TILE_GREEN = 0xD4F6E0, MDA_TILE_VIOLET = 0xE6E1FF;
+constexpr uint32_t MDA_COLOR_TILE_PINK = 0xFFD6E7, MDA_COLOR_TILE_BLUE = 0xD9E8FF, MDA_COLOR_TILE_GREEN = 0xD4F6E0, MDA_COLOR_TILE_VIOLET = 0xE6E1FF;
 // 聊天气泡
-constexpr uint32_t MDA_BUBBLE_BOT = 0xDCF6E5;
+constexpr uint32_t MDA_COLOR_BUBBLE_BOT = 0xDCF6E5;
 
 // 公共样式：theme_init() 之后才能使用
 extern lv_style_t st_card;         // 卡片：白色 72% 半透明 + 白边 + 阴影（设计稿 .cardx）

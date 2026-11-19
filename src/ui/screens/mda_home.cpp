@@ -100,10 +100,10 @@ static lv_obj_t *create_tile(lv_obj_t *parent, const tile_def_t &def) {
  */
 static void create_tiles(lv_obj_t *scr) {
     static const tile_def_t TILES[] = {
-        {MDA_TILE_PINK, &st_grad_pink, ICON_MUSIC, "唱歌故事"},
-        {MDA_TILE_BLUE, &st_grad_blue, ICON_CHAT, "AI 聊天"},
-        {MDA_TILE_GREEN, &st_grad_green, ICON_BOT, "机器人控制"},
-        {MDA_TILE_VIOLET, &st_grad_violet, ICON_CASE, "设备管理"},
+        {MDA_COLOR_TILE_PINK, &st_grad_pink, ICON_MUSIC, "唱歌故事"},
+        {MDA_COLOR_TILE_BLUE, &st_grad_blue, ICON_CHAT, "AI 聊天"},
+        {MDA_COLOR_TILE_GREEN, &st_grad_green, ICON_BOT, "机器人控制"},
+        {MDA_COLOR_TILE_VIOLET, &st_grad_violet, ICON_CASE, "设备管理"},
     };
     constexpr int X0 = 158, Y0 = 30, W = 73, H = 62, GAP = 7;
 
