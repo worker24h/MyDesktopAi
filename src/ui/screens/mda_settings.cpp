@@ -1,14 +1,29 @@
 #include <lvgl.h>
+#include <M5Unified.h>
 #include "mda_screens.h"
 #include "ui/mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
 
+//声明图片
+LV_IMAGE_DECLARE(robot_happy_M);
+
+typedef enum {
+    MDA_SLIDER_SPEADKER, 
+    MDA_SLIDER_DISPLAYER,
+} mda_slider_type_t;
 typedef enum {
     MDA_SETTINGS_ROW_ARROW,    // 右边是 ›，点击跳转
     MDA_SETTINGS_ROW_SLIDER,   // 右边是 滑块 + 数值
 } mda_settings_row_type_t;
 
+#define ROW_ROLE_FACE_ID     "row_role_face"
+#define ROW_VOLUME_ID        "row_volume"
+#define ROW_DISPLAY_LIGHT_ID "row_display_light"
+#define ROW_NETWORK_LINKE_ID "row_network_link"
+#define ROW_ABOUT_ID         "row_about"
+
 typedef struct {
+    const char *id;
     const char *icon;
     uint32_t color;
     const char *text;
@@ -18,12 +33,34 @@ typedef struct {
     int32_t default_value;    // 初始值
 } mda_settings_row_def_t;
 
+typedef struct {
+    lv_obj_t *label_text;
+    mda_slider_type_t slider_type;
+} mda_slider_user_data_t;
+
+// 声音/屏幕亮度最大值是255，但是页面设置上最大值是100，因此需要对应一下
+// 例：0 → 0，50 → 128，60 → 153，80 → 204，100 → 255
+static int mda_convert_max_value(int value) {
+    // 加 50 再除以 100 是四舍五入；直接除会向下取整，比如 50 会得到 127 而不是 128
+    return (value * 255 + 50) / 100;
+}
 
 static void mda_slider_change_event(lv_event_t * event) {
-    lv_obj_t *value = (lv_obj_t*)lv_event_get_user_data(event);
+    lv_obj_t *label_text = (lv_obj_t*)lv_event_get_user_data(event);
     lv_obj_t *slider = lv_event_get_current_target_obj(event);
     int32_t v = lv_slider_get_value(slider);
-    lv_label_set_text_fmt(value, "%d", v);
+    lv_label_set_text_fmt(label_text, "%" LV_PRId32, v);
+    #ifndef MDA_SIM
+    // 真实设备
+    // 加 50 再除以 100 是四舍五入；直接除会向下取整，比如 50 会得到 127 而不是 128
+    uint8_t value = (uint8_t)((v * 255 + 50) / 100);
+    const char* id = (const char*)lv_obj_get_user_data(slider);//肯定不会为空
+    if (strcmp(id, ROW_VOLUME_ID) == 0) {
+        M5.Speaker.setVolume(value);
+    } else {
+        M5.Display.setBrightness(value);
+    }
+    #endif
 }
 
 static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const mda_settings_row_def_t &param) {
@@ -67,6 +104,7 @@ static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const mda_settings_ro
         lv_obj_set_style_bg_color(icon_arrow, lv_color_hex(0x9AA0BF), 0);
     } else {// 滑块
         lv_obj_t *slider = lv_slider_create(row);
+        lv_obj_set_user_data(slider, (void*)param.id);
         lv_obj_set_size(slider, 72, 4);
         lv_slider_set_range(slider, param.min, param.max);
         lv_slider_set_value(slider, param.default_value, LV_ANIM_ON);
@@ -79,7 +117,7 @@ static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const mda_settings_ro
         lv_obj_set_ext_click_area(slider, 10);
         
         lv_obj_t *value = lv_label_create(row);
-        lv_label_set_text_fmt(value, "%d", param.default_value);
+        lv_label_set_text_fmt(value, "%" LV_PRId32, param.default_value);
         lv_obj_set_style_text_font(value, &font_cn_11b, 0);
         lv_obj_set_style_text_color(value, lv_color_hex(MDA_COLOR_INK2), 0);
         lv_obj_set_width(value, 20);
@@ -95,11 +133,11 @@ static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const mda_settings_ro
 static void mda_settings_list_create(lv_obj_t *parent) {
     constexpr int max_size = 5;
     static const mda_settings_row_def_t controls[max_size] = {
-        {ICON_SMILE, MDA_COLOR_YELLOW, "角色与表情", MDA_SETTINGS_ROW_ARROW, 0, 0, 0},
-        {ICON_VOLUME, MDA_COLOR_BLUE, "音量", MDA_SETTINGS_ROW_SLIDER, 0, 100, 50},
-        {ICON_SUN, MDA_COLOR_VIOLET, "亮度", MDA_SETTINGS_ROW_SLIDER, 10, 100, 50},
-        {ICON_WIFI, MDA_COLOR_OK, "网络与连接", MDA_SETTINGS_ROW_ARROW, 0, 0, 0},
-        {ICON_INFO, MDA_COLOR_GREEN, "关于设备", MDA_SETTINGS_ROW_ARROW, 0, 0, 0}
+        {ROW_ROLE_FACE_ID, ICON_SMILE, MDA_COLOR_YELLOW, "角色与表情", MDA_SETTINGS_ROW_ARROW, 0, 0, 0},
+        {ROW_VOLUME_ID, ICON_VOLUME, MDA_COLOR_BLUE, "音量", MDA_SETTINGS_ROW_SLIDER, 0, 100, 50},
+        {ROW_DISPLAY_LIGHT_ID, ICON_SUN, MDA_COLOR_VIOLET, "亮度", MDA_SETTINGS_ROW_SLIDER, 10, 100, 50},
+        {ROW_NETWORK_LINKE_ID, ICON_WIFI, MDA_COLOR_OK, "网络与连接", MDA_SETTINGS_ROW_ARROW, 0, 0, 0},
+        {ROW_ABOUT_ID, ICON_INFO, MDA_COLOR_GREEN, "关于设备", MDA_SETTINGS_ROW_ARROW, 0, 0, 0}
     };
 
     for (int i = 0; i < max_size; i++) {
@@ -117,16 +155,55 @@ lv_obj_t *mda_settings_create() {
     lv_obj_set_style_bg_opa(settings, LV_OPA_TRANSP, 0);
 
     //右侧
-    lv_obj_t *card = lv_obj_create(settings);
-    lv_obj_remove_style_all(card);
-    lv_obj_add_style(card, &st_card, 0);
-    lv_obj_set_pos(card, 114, 26);
-    lv_obj_set_size(card, 198, 155);
-    lv_obj_set_style_pad_hor(card, 10, 0);
-    lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN); // 使用flow，列排列
-    lv_obj_remove_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_t *right_card = lv_obj_create(settings);
+    lv_obj_remove_style_all(right_card);
+    lv_obj_add_style(right_card, &st_card, 0);
+    lv_obj_set_pos(right_card, 114, 26);
+    lv_obj_set_size(right_card, 198, 155);
+    lv_obj_set_style_pad_hor(right_card, 10, 0);
+    lv_obj_set_flex_flow(right_card, LV_FLEX_FLOW_COLUMN); // 使用flow，列排列
+    lv_obj_remove_flag(right_card, LV_OBJ_FLAG_SCROLLABLE);
+    mda_settings_list_create(right_card);
 
-    mda_settings_list_create(card);
+    //左侧
+    lv_obj_t *left_robot = lv_obj_create(settings);
+    lv_obj_remove_style_all(left_robot);
+    lv_obj_remove_flag(left_robot, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_pos(left_robot, 8, 28);
+    lv_obj_set_size(left_robot, 100, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(left_robot, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(left_robot, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(left_robot, 4, 0);
+
+    lv_obj_t *avatar = lv_obj_create(left_robot);
+    lv_obj_remove_style_all(avatar);
+    lv_obj_remove_flag(avatar, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(avatar, 90, 90);
+    lv_obj_set_style_radius(avatar, LV_RADIUS_CIRCLE, 0);
+    //渐变
+    lv_obj_set_style_bg_color(avatar, lv_color_hex(MDA_COLOR_WHITE), 0);
+    lv_obj_set_style_bg_grad_color(avatar, lv_color_hex(0xDCECFF), 0); //渐变色，浅蓝色
+    lv_obj_set_style_bg_grad_dir(avatar, LV_GRAD_DIR_VER, 0); // 从上往下渐变，最终是由白色到浅蓝色
+    lv_obj_set_style_bg_opa(avatar, LV_OPA_COVER, 0); //透明度255，不透明
+
+    //border
+    lv_obj_set_style_border_color(avatar, lv_color_hex(MDA_COLOR_WHITE), 0);
+    lv_obj_set_style_border_width(avatar, 2, 0);
+
+    lv_obj_t *image = lv_image_create(avatar);
+    lv_image_set_src(image, &robot_happy_M);   // M 尺寸 80x69，放在 90px 的圆里
+    lv_obj_center(image);
+
+    // 名字：设计稿 13px 粗体，项目里没有这个字号，用最接近的 14px
+    lv_obj_t *s_name_label = lv_label_create(left_robot);
+    lv_obj_add_style(s_name_label, &st_text, 0);                  // 颜色 MDA_COLOR_INK
+    lv_obj_set_style_text_font(s_name_label, &font_cn_14, 0);
+    lv_label_set_text(s_name_label, "汤圆");
+
+    // 签名：11px 灰色（st_text2）
+    lv_obj_t *sign_label = lv_label_create(left_robot);
+    lv_obj_add_style(sign_label, &st_text2, 0);
+    lv_label_set_text(sign_label, "陪伴每一天～");
 
     return settings;
 }

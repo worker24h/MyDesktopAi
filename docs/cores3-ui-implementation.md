@@ -893,10 +893,208 @@ lv_obj_add_event_cb(slider, mda_settings_slider_changed_cb, LV_EVENT_VALUE_CHANG
 - [ ] 数字从两位变三位（100）时，滑块位置不跳
 - [ ] 箭头是灰色的；「网络与连接」没有方块字
 
+#### 第 4 步：左侧头像、名字、改名按钮
+
+左边 x 8～108 这一列，从上往下：头像、名字、签名、改名按钮。
+
+##### 目标效果
+
+```
+x=8          x=108
+   ┌─────────┐
+   │  ╭───╮  │  ← 头像：70×70 圆，y=28 起
+   │  │ 🤖 │  │     白→浅蓝渐变 + 2px 白边 + 阴影，里面是 M 尺寸机器人（80px）
+   │  ╰───╯  │
+   │我的小伙伴│  ← 名字：粗体，深色
+   │ 陪伴每一天～│ ← 签名：小字，灰色
+   │ ( ✏ 改名 ) │ ← 胶囊按钮：高 22
+   └─────────┘
+```
+
+##### 4.1 左列容器（照抄首页 `create_left()` 的写法）
+
+- `lv_obj_create(scr)` → `remove_style_all`，`lv_obj_set_pos(col, 8, 28)`，`lv_obj_set_size(col, 100, LV_SIZE_CONTENT)`
+- flex 竖排 `LV_FLEX_FLOW_COLUMN`，主轴 `START`，交叉轴 **`CENTER`**（每个元素水平居中）
+- 行间距 `lv_obj_set_style_pad_row(col, 4, 0)`；关闭滚动
+
+##### 4.2 头像
+
+| 设置 | 写法 | 说明 |
+|---|---|---|
+| 圆形底 | `lv_obj_create(col)` → `remove_style_all`，`size 70×70`，`radius LV_RADIUS_CIRCLE` | |
+| 渐变 | `bg_color` 白色，`bg_grad_color 0xDCECFF`，`bg_grad_dir LV_GRAD_DIR_VER`，`bg_opa COVER` | 设计稿是径向渐变，用竖向渐变近似，效果差不多，渲染也便宜 |
+| 白边 | `border_width 2`，`border_color` 白色 | |
+| 阴影 | `shadow_width 12`，`shadow_offset_y 4`，`shadow_color MDA_COLOR_SHADOW`，`shadow_opa` 约 40 | 和卡片一致；角大小 12+35=47，**超过阴影缓存 40**，会每次重算，但头像只有一个，影响不大 |
+| 机器人 | `lv_image_create(avatar)`，`lv_image_set_src(img, &robot_happy_M)`，`lv_obj_center(img)` | 文件顶部加 `LV_IMAGE_DECLARE(robot_happy_M);`。M 尺寸（80×69）专门给头像用，S（44）留给表情页网格 |
+| 不滚动 | `lv_obj_remove_flag(avatar, LV_OBJ_FLAG_SCROLLABLE)` | |
+
+后续表情系统做好后，头像要跟着当前表情换图，那时再把 `img` 存成静态变量。
+
+##### 4.3 名字和签名
+
+- 名字：label，`st_text` + 字体 `font_cn_14`，文字「我的小伙伴」。设计稿是 13px 粗体，项目里没有这个字号，14px 最接近
+- 签名：label，`st_text2`（11px 灰色），文字「陪伴每一天～」
+- 名字的 label 存成**静态变量** `s_name_label`，改名时要更新它
+
+##### 4.4 改名按钮
+
+| 设置 | 写法 |
+|---|---|
+| 胶囊 | `lv_button_create(col)` → `remove_style_all` → `add_style(&st_card_strong)`，高 22，宽 `LV_SIZE_CONTENT`，`radius 11`，`pad_hor 10` |
+| 内容 | 横排 flex，交叉轴居中，`pad_column 3`；里面一个图标 label（`ICON_PEN`）+ 一个文字 label「改名」，字体都用 `font_cn_11b` |
+| 按下效果 | `lv_obj_set_style_transform_scale(btn, 240, LV_STATE_PRESSED)`，按下时缩到 94%，`transform_pivot_x/y` 设成按钮中心 |
+
+**设备上没有键盘**，改名先用最简单的方案：**点一下，在几个预设名字里轮换**：
+
+```cpp
+static const char *NAMES[] = {"我的小伙伴", "小星星", "豆豆", "团子"};
+```
+
+点击回调（`LV_EVENT_CLICKED`）里下标加 1、取模，`lv_label_set_text(s_name_label, NAMES[i])`。以后可以改成「在手机网页上改名」。
+
+##### 4.5 重新生成字体
+
+「我的小伙伴」「陪伴每一天」「改名」和预设名字里的字都是新的，运行 `bash tools/make_assets.sh fonts`。
+
+> 「～」是全角波浪号，`make_fonts.py` 的字符范围包含全角标点，会被一起打包。
+
+##### 验证
+
+- [ ] 头像、名字、签名、按钮在左列居中，上下间距均匀
+- [ ] 头像是圆的，有白边和阴影，机器人在正中间
+- [ ] 点「改名」，名字在几个预设之间轮换；按下时按钮有缩小效果
+- [ ] 没有方块字
+
+#### 第 5 步：滑块接硬件
+
+拖动亮度滑块，真机屏幕亮度实时变化；拖动音量滑块，松手时响一声提示音，能听出音量大小。仿真里只打印数值。
+
+##### 5.1 先加一层硬件接口，UI 不直接调 `M5`
+
+UI 代码在仿真里也要编译，仿真没有 `M5.Display` / `M5.Speaker`。所以加一层很薄的接口，真机和仿真各实现一份（和状态栏以后要做的拆分是同一个思路）：
+
+| 文件 | 内容 | 参与哪个环境 |
+|---|---|---|
+| `src/hal/mda_device.h` | 声明 `void mda_device_set_brightness(int percent);`、`void mda_device_set_volume(int percent);`、`void mda_device_beep();` | 两边都 include |
+| `src/hal/mda_device.cpp` | 真机实现，调用 `M5` | 只有 `m5stack-cores3`（`env:sim` 的 `build_src_filter` 不包含 `hal/`，自动排除） |
+| `src/sim/sim_device.cpp` | 仿真实现，`printf` 打印数值 | 只有 `sim`，文件用 `#ifdef MDA_SIM` 包起来 |
+
+真机实现：
+
+| 函数 | 实现 | 注意 |
+|---|---|---|
+| 亮度 | `M5.Display.setBrightness(percent * 255 / 100)` | 函数里再做一次下限保护：小于 10 就按 10 处理 |
+| 音量 | `M5.Speaker.setVolume(percent * 255 / 100)` | |
+| 提示音 | `M5.Speaker.tone(2000, 50)` | 2kHz 响 50ms |
+
+##### 5.2 滑块回调怎么知道调哪个硬件
+
+现在两个滑块共用一个回调，`user_data` 已经用来传数值 label 了。办法：在行描述里加一个函数指针，创建时存到**滑块对象自己**的 user_data 上：
+
+```cpp
+typedef void (*mda_settings_slider_cb_t)(int32_t value);
+
+typedef struct {
+    ...
+    mda_settings_slider_cb_t on_change;   // 拖动时调用；箭头行填 nullptr
+} mda_settings_row_def_t;
+```
+
+- 创建滑块时：`lv_obj_set_user_data(slider, (void *)param.on_change);`
+- 回调里：`auto fn = (mda_settings_slider_cb_t)lv_obj_get_user_data(slider);`，不为空就 `fn(value)`
+- 表格里音量填 `mda_device_set_volume`，亮度填 `mda_device_set_brightness`，箭头行填 `nullptr`
+
+这样回调里不用写 `if (是音量) ... else if (是亮度)`，以后加别的滑块也只改表格。
+
+> 区分两个 user_data：`lv_obj_add_event_cb(..., user_data)` 是**事件**的；`lv_obj_set_user_data(obj, ...)` 是**对象**的，一个对象只有一个。
+
+##### 5.3 什么时候调用
+
+| 事件 | 做什么 |
+|---|---|
+| `LV_EVENT_VALUE_CHANGED`（拖动中，连续触发） | 更新数字；调 `on_change`。亮度要跟手变化 |
+| `LV_EVENT_RELEASED`（松手） | 音量滑块响一声 `mda_device_beep()`；第 6 步在这里保存 |
+
+拖动时 `VALUE_CHANGED` 一秒可能触发几十次。`setBrightness` 走 I2C 调电源芯片，量不大，可以接受；如果以后发现卡，再改成"值变化超过 2 才调用"。
+
+##### 5.4 开机时应用一次
+
+开机时屏幕亮度、音量是 M5Unified 的默认值，和滑块显示的 60 / 80 对不上。`mda_settings_create()` 最后对两个滑块的初始值各调用一次 `on_change`。第 6 步改成从配置文件读。
+
+##### 验证
+
+- [ ] 仿真：拖动滑块，终端打印 `brightness=xx` / `volume=xx`，松手打印 `beep`
+- [ ] 真机：拖亮度，屏幕亮度跟着变；拖到最左边屏幕不会全黑
+- [ ] 真机：拖音量后松手响一声，音量大小有区别；音量 0 时不响
+- [ ] 开机后屏幕亮度就是 80%
+
+#### 第 6 步：保存到 SD 卡，重启后保留
+
+##### 6.1 配置文件和接口
+
+照 `src/config/mda_wifi_config.*` 的写法，新建 `src/config/mda_ui_config.h/.cpp`：
+
+```
+/data/config/ui.json
+{ "volume": 60, "brightness": 80, "name": "我的小伙伴" }
+```
+
+```cpp
+#define MDA_UI_CONFIG_PATH "/data/config/ui.json"
+
+typedef struct {
+    int volume = 60;            // 默认值：文件不存在或字段缺失时用
+    int brightness = 80;
+    char name[32] = "我的小伙伴";  // UTF-8，一个汉字 3 字节，32 字节够 10 个字
+} mda_ui_config_t;
+
+bool mda_ui_config_load(mda_ui_config_t &cfg);         // 失败时 cfg 保持默认值
+bool mda_ui_config_save(const mda_ui_config_t &cfg);   // 先写 .tmp 再替换，和 wifi 配置一样
+mda_ui_config_t &mda_ui_config();                      // 全局唯一一份，供各页面读写
+```
+
+要点：
+
+- 读取时每个字段都用 `doc["volume"] | 60` 这种带默认值的写法，字段缺失也不会出错
+- 读出来的值要**限制范围**：音量 0～100，亮度 10～100。防止有人手改文件写了 0，开机屏幕全黑
+- 名字用 `strlcpy` 复制，防止超长溢出
+
+##### 6.2 仿真里怎么办
+
+仿真没有 SD 卡。`env:sim` 的 `build_src_filter` 不包含 `config/`，所以 `mda_ui_config.cpp` 不会参与编译。在 `src/sim/` 里加一份 `sim_ui_config.cpp`：`load` 直接返回 false（用默认值），`save` 只 `printf`。
+
+##### 6.3 接入流程
+
+| 时机 | 做什么 | 位置 |
+|---|---|---|
+| 开机 | `mda_ui_config_load(mda_ui_config())`，然后 `mda_device_set_brightness/volume` 应用 | `main.cpp`，`sd_setup()` 之后、`ui_init()` 之前 |
+| 创建设置页 | 滑块初始值、名字从 `mda_ui_config()` 读，不再用表格里写死的 60 / 80 | `mda_settings_create()` |
+| 滑块松手 `LV_EVENT_RELEASED` | 更新 `mda_ui_config()` 里对应字段，调用 `mda_ui_config_save` | 滑块回调 |
+| 改名 | 更新 `name`，保存 | 改名按钮回调 |
+
+**为什么只在松手时保存**：拖动时 `VALUE_CHANGED` 会触发几十次，每次都写 SD 卡，既慢又磨损卡。松手只写一次。
+
+滑块回调怎么知道该改 `volume` 还是 `brightness`：和 5.2 一样，在行描述里再加一个 `int *config_field`，指向 `mda_ui_config()` 里的字段。也可以把 5.2 的 `on_change` 和这个字段合并成一个小结构体，两种都行。
+
+##### 6.4 SD 卡和屏幕共用 SPI 总线
+
+CoreS3 的 SD 卡和屏幕在同一条 SPI 总线上。现在 flush 用的是同步写屏（`startWrite` … `endWrite`），而且保存配置和 LVGL 刷屏都在 `loop()` 这一个任务里**依次执行**，不会同时占用总线，所以不用额外加锁。
+
+以后如果把 flush 改成异步 DMA，或者把 LVGL 放到单独的任务里，就必须处理总线互斥，见本节前面的性能分析。
+
+##### 验证
+
+- [ ] 拖动滑块、改名后，串口能看到保存日志；SD 卡上出现 `/data/config/ui.json`，内容正确
+- [ ] 重启后亮度、音量、名字都保持上次的值
+- [ ] 删掉 `ui.json` 后重启，用默认值 60 / 80 / 我的小伙伴，不报错
+- [ ] 手动把文件里 `brightness` 改成 0，重启后亮度是 10%，屏幕没有全黑
+- [ ] 仿真里松手时打印 `save`，不崩溃
+
 #### 待办 / 备注
 
 - `include/lv_conf.h` 的 `LV_USE_SYSMON` 还是 `1`（性能测量用），测量已结束，可以改回 `0`。
-- 后续步骤（4～6）的要点在进入该步骤时再补充到本文档。
+- 设置列表里「角色与表情 ›」「网络与连接 ›」「关于设备 ›」的点击还没做：前两个要等表情页、设备页实现后再跳转；「关于设备」等 Toast（4.4 节）实现后显示固件版本。
+- 状态栏的硬件读取（电池、WiFi、时间）也可以照第 5 步的 `mda_device` 思路抽成接口，这样仿真里也能看到状态栏。
 
 ### 5.7 表情系统 `scr_faces`
 

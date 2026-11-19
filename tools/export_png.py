@@ -3,7 +3,7 @@
 从设计稿 docs/design/cores3-ui.html 导出 UI 素材 PNG（用无界面 Chrome 渲染）。
 
 输出：
-  tools/assets/png/robot/robot_<表情>[_blink]_<L|XL|S>.png   机器人（透明背景）
+  tools/assets/png/robot/robot_<表情>[_blink]_<L|XL|M|S>.png   机器人（透明背景）
   tools/assets/png/bg_main.png                                 320x240 背景
 
 用法：python3 tools/export_png.py            （在工程根目录运行）
@@ -25,8 +25,8 @@ OUT_ROBOT = ROOT / "tools/assets/png/robot"
 OUT_BG = ROOT / "tools/assets/png/bg_main.png"
 CHROME = os.environ.get("CHROME", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 
-# 尺寸：页面里用 / 待机全屏 / 表情网格+头像
-SIZES = {"L": 120, "XL": 200, "S": 44}
+# 尺寸：L 页面里用 / XL 待机全屏 / M 设置页头像 / S 表情网格
+SIZES = {"L": 120, "XL": 200, "M": 80, "S": 44}  # M：设置页头像（90px 圆里放 80px 宽的机器人）
 
 # 在设计稿页面里运行：渲染每个机器人，结果写到 <body data-out="...">
 EXPORT_JS = r"""
