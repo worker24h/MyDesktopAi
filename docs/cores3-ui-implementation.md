@@ -622,8 +622,8 @@ pio run -t upload -t monitor                   # 真机
 | 步骤 | 内容 | 做完能看到 | 状态 |
 |---|---|---|---|
 | 1 | 空的设置页 + 菜单栏切换 | 点 ⚙ 切到设置页，点 🏠 回首页 | ✅ 完成 |
-| 2 | 右侧列表卡片：5 行，图标 + 文字 + 箭头 | 列表的样子 | ⬜ 进行中 |
-| 3 | 音量、亮度两行加滑块和数值 | 拖动滑块，数字跟着变 | ⬜ |
+| 2 | 右侧列表卡片：5 行，图标 + 文字 + 箭头 | 列表的样子 | ✅ 完成（有 2 处遗留，见第 3 步开头） |
+| 3 | 音量、亮度两行加滑块和数值 | 拖动滑块，数字跟着变 | ⬜ 进行中 |
 | 4 | 左侧头像、名字、改名按钮 | 页面完整 | ⬜ |
 | 5 | 滑块接硬件（真机调亮度、音量，仿真只打印） | 真机亮度会变 | ⬜ |
 | 6 | 保存到 SD 卡 `/data/config/ui.json`，重启后保留 | 重启后设置还在 | ⬜ |
@@ -771,10 +771,132 @@ bash tools/make_assets.sh fonts
 - [ ] 没有方块字
 
 
+#### 第 3 步：音量、亮度两行加滑块和数值
+
+只做界面：拖动滑块，右边的数字跟着变。真正调亮度、音量放到第 5 步，保存放到第 6 步。
+
+##### 先处理第 2 步的 2 处遗留
+
+- 箭头颜色：`lv_obj_set_style_bg_color(icon_arrow, ...)` 设的是**背景色**（没有 `bg_opa` 所以不显示），要改成 `lv_obj_set_style_text_color(icon_arrow, lv_color_hex(0x9AA0BF), 0)`。
+- 文字：「网络与链接」改成「网络与**连接**」。
+
+##### 目标效果
+
+```
+┌─────────────────────────────────────┐
+│ (😊) 角色与表情                   › │
+│─────────────────────────────────────│
+│ (🔊) 音量    ━━━━━━━●───────    60  │  ← 滑块宽 72，数值宽 20
+│─────────────────────────────────────│
+│ (☀) 亮度     ━━━━━━━━━●─────    80  │
+│─────────────────────────────────────│
+│ (📶) 网络与连接                   › │
+│─────────────────────────────────────│
+│ (ⓘ) 关于设备                     › │
+└─────────────────────────────────────┘
+```
+
+宽度够不够：卡片内宽 198 − 20 = 178；圆 22 + 间距 8 + 滑块 72 + 间距 8 + 数值 20 + 间距 8 = 138，留给文字 40px，「音量」「亮度」两个 11px 字约 24px，放得下。
+
+##### 3.1 扩展行描述：区分「箭头行」和「滑块行」
+
+在 `mda_settings_row_def_t` 里加一个类型和滑块参数：
+
+```cpp
+typedef enum {
+    MDA_SETTINGS_ROW_ARROW,    // 右边是 ›，点击跳转
+    MDA_SETTINGS_ROW_SLIDER,   // 右边是 滑块 + 数值
+} mda_settings_row_type_t;
+
+typedef struct {
+    const char *icon;
+    uint32_t color;
+    const char *text;
+    mda_settings_row_type_t type;
+    int32_t min;      // 以下 3 个只对滑块行有意义，箭头行填 0
+    int32_t max;
+    int32_t value;    // 初始值
+} mda_settings_row_def_t;
+```
+
+表格里：
+
+| 行 | type | min | max | value | 说明 |
+|---|---|---|---|---|---|
+| 角色与表情 | ARROW | 0 | 0 | 0 | |
+| 音量 | SLIDER | 0 | 100 | 60 | |
+| 亮度 | SLIDER | **10** | 100 | 80 | 最低 10%，否则屏幕全黑看不见，没法再调回来 |
+| 网络与连接 | ARROW | 0 | 0 | 0 | |
+| 关于设备 | ARROW | 0 | 0 | 0 | |
+
+##### 3.2 行函数里按类型创建右侧部件
+
+`mda_settings_row_create()` 里，文字 label（`flex_grow = 1`）之后：
+
+```cpp
+if (param.type == MDA_SETTINGS_ROW_SLIDER) {
+    // 创建滑块 + 数值（见 3.3、3.4）
+} else {
+    // 原来的箭头
+}
+```
+
+文字的 `flex_grow = 1` 不变，它会把滑块和数值挤到右边，和箭头的原理一样。
+
+##### 3.3 滑块
+
+| 设置 | 写法 | 说明 |
+|---|---|---|
+| 创建 | `lv_slider_create(row)` | **不要** `remove_style_all`，保留默认主题的滑块样式，只改颜色和尺寸，省事 |
+| 尺寸 | `lv_obj_set_size(slider, 72, 4)` | 高 4 是轨道粗细 |
+| 范围和初始值 | `lv_slider_set_range(slider, min, max)`，`lv_slider_set_value(slider, value, LV_ANIM_OFF)` | |
+| 轨道颜色 | `lv_obj_set_style_bg_color(slider, lv_color_hex(MDA_COLOR_LINE), LV_PART_MAIN)` | 没填充的部分 |
+| 填充颜色 | `lv_obj_set_style_bg_color(slider, lv_color_hex(MDA_COLOR_VIOLET), LV_PART_INDICATOR)` | 设计稿 `accent-color: var(--violet)` |
+| 圆钮 | `bg_color` 设成白色，`LV_PART_KNOB`；`lv_obj_set_style_pad_all(slider, 4, LV_PART_KNOB)` | 圆钮直径 = 轨道高 4 + 上下 pad 各 4 = 12 |
+| 圆钮描边 | `border_width 1` + `border_color MDA_COLOR_VIOLET`，`LV_PART_KNOB` | 白底上看得清 |
+| 点击范围 | `lv_obj_set_ext_click_area(slider, 10)` | 轨道只有 4px 高，手指很难按准，四周扩大 10px |
+
+这里第一次用到选择器的 **part**：同一个滑块有 3 个部位，用 `LV_PART_MAIN` / `LV_PART_INDICATOR` / `LV_PART_KNOB` 分别设样式。
+
+##### 3.4 数值 label
+
+- `lv_label_create(row)`，字体 `font_cn_11`，颜色 `MDA_COLOR_INK2`（次要文字的灰）
+- 固定宽度 `lv_obj_set_width(value_label, 20)`，右对齐 `lv_obj_set_style_text_align(value_label, LV_TEXT_ALIGN_RIGHT, 0)`
+  - 固定宽度是为了数字从 9 变 10、从 99 变 100 时，滑块**不会左右跳**
+- 初始文字：`lv_label_set_text_fmt(value_label, "%d", (int)param.value)`
+
+##### 3.5 拖动时更新数字
+
+给滑块注册 `LV_EVENT_VALUE_CHANGED` 事件，把数值 label 作为 `user_data` 传进去：
+
+```cpp
+lv_obj_add_event_cb(slider, mda_settings_slider_changed_cb, LV_EVENT_VALUE_CHANGED, value_label);
+```
+
+回调里：
+
+1. `lv_event_get_current_target_obj(e)` 拿到滑块
+2. `lv_event_get_user_data(e)` 拿到数值 label
+3. `lv_slider_get_value(slider)` 读当前值，`lv_label_set_text_fmt` 更新数字
+
+拖动过程中会连续触发 `VALUE_CHANGED`。第 5 步会在这里调硬件（亮度要跟手实时变化）；第 6 步保存则放到 `LV_EVENT_RELEASED`（松手时才写 SD 卡）。
+
+##### 3.6 不需要重新生成字体
+
+数字 0～9 是 ASCII，字体里本来就有。只有改了「网络与连接」的「连」字，才需要运行一次 `bash tools/make_assets.sh fonts`。
+
+##### 验证
+
+- [ ] 音量、亮度两行右边是滑块 + 数字，其他 3 行还是箭头
+- [ ] 初始值是 60 和 80
+- [ ] 拖动滑块，数字实时跟着变；亮度最小只能拖到 10
+- [ ] 数字从两位变三位（100）时，滑块位置不跳
+- [ ] 箭头是灰色的；「网络与连接」没有方块字
+
 #### 待办 / 备注
 
 - `include/lv_conf.h` 的 `LV_USE_SYSMON` 还是 `1`（性能测量用），测量已结束，可以改回 `0`。
-- 后续步骤（3～6）的要点在进入该步骤时再补充到本文档。
+- 后续步骤（4～6）的要点在进入该步骤时再补充到本文档。
 
 ### 5.7 表情系统 `scr_faces`
 
