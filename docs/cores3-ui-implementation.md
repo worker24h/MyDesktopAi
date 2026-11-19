@@ -610,6 +610,172 @@ Expr current_expr();
 
 - 音量、亮度、名字、表情保存到 `/data/config/ui.json`（用 ArduinoJson，和现有 `mda_wifi_config` 的写法一致），滑块松手（`LV_EVENT_RELEASED`）时才写，避免频繁写 SD 卡
 
+**实现步骤**：逐步推进，做完一步在仿真里验证，再进入下一步。
+
+```
+pio run -e sim && .pio/build/sim/program      # 仿真
+pio run -t upload -t monitor                   # 真机
+```
+
+#### 总体路线
+
+| 步骤 | 内容 | 做完能看到 | 状态 |
+|---|---|---|---|
+| 1 | 空的设置页 + 菜单栏切换 | 点 ⚙ 切到设置页，点 🏠 回首页 | ✅ 完成 |
+| 2 | 右侧列表卡片：5 行，图标 + 文字 + 箭头 | 列表的样子 | ⬜ 进行中 |
+| 3 | 音量、亮度两行加滑块和数值 | 拖动滑块，数字跟着变 | ⬜ |
+| 4 | 左侧头像、名字、改名按钮 | 页面完整 | ⬜ |
+| 5 | 滑块接硬件（真机调亮度、音量，仿真只打印） | 真机亮度会变 | ⬜ |
+| 6 | 保存到 SD 卡 `/data/config/ui.json`，重启后保留 | 重启后设置还在 | ⬜ |
+
+命名规则：本项目的结构体、函数一律用下划线小写（snake_case），结构体类型加 `_t` 后缀；`if` / 循环即使一行也要加 `{}`。
+
+
+#### 第 1 步：空页面 + 菜单栏切换（✅ 已完成）
+
+做了什么：
+
+- `src/ui/screens/mda_settings.cpp`：`mda_settings_create()` 用 `lv_obj_create(NULL)` 创建独立屏幕，关闭滚动，背景透明（透出 `lv_layer_bottom()` 上的背景图）。
+- `src/ui/screens/mda_screens.h`：声明 `mda_settings_create()`。
+- `src/ui/mda_ui.h`：`mda_pages_t` 保存菜单栏 4 个图标对应的页面，未实现的为 `nullptr`。
+- `src/ui/mda_ui.cpp`：`ui_init()` 里**一次性创建**首页和设置页（常驻内存，切换时不再创建），再加载首页。
+- `src/ui/widgets/mda_menubar.cpp`：菜单栏放在 `lv_layer_top()`；点击回调先找目标页面，页面为 `nullptr` 就直接返回（避免 `lv_screen_load(nullptr)` 崩溃），否则切高亮并用 `lv_screen_load_anim(..., MOVE_LEFT/RIGHT, 300, 0, false)` 滑动切换。
+
+要点回顾：
+
+- `lv_screen_load_anim` 最后一个参数必须是 `false`，否则旧页面会被删除，`mda_pages_t` 里的指针变成悬空指针。
+- 页面背景透明，所以要用 `MOVE_*` 动画，`OVER_*` / `FADE_*` 会让两页内容叠在一起。
+- 状态栏、菜单栏在 top 层，背景图在 bottom 层，切页时都不动，也不用重建。
+
+
+#### 第 2 步：右侧设置列表卡片
+
+只做外观：5 行，每行是图标、文字、右箭头。滑块留到第 3 步，点击留到后面。
+
+##### 目标效果
+
+```
+         x=114                         x=312
+y=26  ┌─────────────────────────────────┐
+      │ (😊) 角色与表情               › │  ← 每行高 33
+      │─────────────────────────────────│  ← 1px 分隔线
+      │ (🔊) 音量                     › │
+      │─────────────────────────────────│
+      │ (☀) 亮度                      › │
+      │─────────────────────────────────│
+      │ (📶) 网络与连接               › │
+      │─────────────────────────────────│
+      │ (ⓘ) 关于设备                  › │  ← 最后一行没有分隔线
+y=191 └─────────────────────────────────┘
+      ═══════════ 菜单栏（y 192 起）═══════════
+```
+
+左边 x 8～108 留给第 4 步的头像。音量、亮度这两行先也放箭头，第 3 步再换成滑块。
+
+##### 2.1 删掉测试用的 label
+
+`mda_settings.cpp` 里显示 `"Test"` 的那几行删掉。
+
+##### 2.2 卡片容器
+
+在 `mda_settings_create()` 里建一个容器当卡片：
+
+| 设置 | 写法 | 说明 |
+|---|---|---|
+| 创建 | `lv_obj_create(scr)` → `lv_obj_remove_style_all` → `lv_obj_add_style(card, &st_card, 0)` | `st_card` 是白色 72% 半透明 + 白边 + 阴影，对应设计稿 `.cardx` |
+| 位置大小 | `lv_obj_set_pos(card, 114, 26)`，`lv_obj_set_size(card, 198, 165)` | 5 × 33 = 165 |
+| 内边距 | `lv_obj_set_style_pad_hor(card, 10, 0)` | 左右各留 10px |
+| 布局 | `lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN)` | 5 行从上往下自动排 |
+| 不滚动 | `lv_obj_remove_flag(card, LV_OBJ_FLAG_SCROLLABLE)` | |
+
+> 卡片底边 191 和菜单栏顶边 192 只差 1px，卡片阴影会被菜单栏盖住一点，这是正常的。觉得挤，可以把行高改成 32。
+
+##### 2.3 用一个函数创建一行
+
+5 行结构一样，写一个辅助函数，**返回这一行的容器**（第 3 步要往音量、亮度这两行里加滑块）：
+
+```cpp
+static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const char *icon, uint32_t icon_bg, const char *text);
+```
+
+一行由 4 部分组成：
+
+**① 行容器**
+
+- `lv_obj_create(parent)` → `remove_style_all`
+- 宽 `LV_PCT(100)`（占满卡片内宽），高 `33`
+- flex 横排：`LV_FLEX_FLOW_ROW`，交叉轴 `LV_FLEX_ALIGN_CENTER`（垂直居中）
+- 子元素间距：`lv_obj_set_style_pad_column(row, 8, 0)`
+- 关闭滚动
+- **只画下边框**当分隔线：
+
+  ```cpp
+  lv_obj_set_style_border_side(row, LV_BORDER_SIDE_BOTTOM, 0);
+  lv_obj_set_style_border_width(row, 1, 0);
+  lv_obj_set_style_border_color(row, lv_color_hex(MDA_LINE), 0);
+  ```
+
+**② 彩色圆形图标**
+
+- 一个 22×22 的 `lv_obj`：`remove_style_all`，圆角 `LV_RADIUS_CIRCLE`，`bg_color` 用传进来的颜色，`bg_opa` 设成 `LV_OPA_COVER`
+- 里面放一个 label 显示图标：字体 `font_cn_11`（里面也包含图标），白色，`lv_obj_center()`
+
+**③ 文字**
+
+- label，加 `st_text` 样式，再把字体换成 `font_cn_11b`（设计稿是粗体）
+- **`lv_obj_set_flex_grow(label, 1)`**：让文字占满剩下的宽度，右箭头就会被挤到最右边。这是 flex 里"左边一个、右边一个"的常用写法
+
+**④ 右箭头**
+
+- label，`ICON_RIGHT`，字体 `font_cn_11`，颜色 `0x9AA0BF`（设计稿 `.chev` 的灰色）
+
+##### 2.4 用表格驱动 5 行
+
+和首页 `create_tiles()` 一样，用一个数组描述每一行，再循环创建：
+
+```cpp
+typedef struct {
+    const char *icon;
+    uint32_t color;
+    const char *text;
+} mda_settings_row_def_t;
+```
+
+| 行 | 图标 | 颜色（设计稿） |
+|---|---|---|
+| 角色与表情 | `ICON_SMILE` | `0xFFC93C`（黄，主题里没有，直接写数字） |
+| 音量 | `ICON_VOLUME` | `MDA_BLUE` |
+| 亮度 | `ICON_SUN` | `MDA_VIOLET` |
+| 网络与连接 | `ICON_WIFI` | `MDA_OK` |
+| 关于设备 | `ICON_INFO` | `MDA_GREEN` |
+
+循环结束后，**最后一行**要去掉分隔线：`lv_obj_set_style_border_width(最后一行, 0, 0)`。可以把每次返回的行记下来，或者在循环里判断是不是最后一个。
+
+##### 2.5 重新生成字体
+
+「角色与表情」「音量」「亮度」「网络与连接」「关于设备」这些字，现在的字体里大多没有，会显示成方块。写完代码后运行：
+
+```
+bash tools/make_assets.sh fonts
+```
+
+`make_fonts.py` 会扫描 `src/ui/` 下的代码，只把出现过的中文字打包进字体。以后在 UI 里加新的中文字，都要重新生成一次。
+
+##### 验证
+
+点 ⚙ 切到设置页，检查：
+
+- [ ] 卡片在右边，5 行均匀排列，文字垂直居中
+- [ ] 箭头都靠最右边对齐
+- [ ] 前 4 行下面有浅色分隔线，最后一行没有
+- [ ] 没有方块字
+
+
+#### 待办 / 备注
+
+- `include/lv_conf.h` 的 `LV_USE_SYSMON` 还是 `1`（性能测量用），测量已结束，可以改回 `0`。
+- 后续步骤（3～6）的要点在进入该步骤时再补充到本文档。
+
 ### 5.7 表情系统 `scr_faces`
 
 - 6×2 网格，x8–312，y26 开始，每格约 46×70，间距 5

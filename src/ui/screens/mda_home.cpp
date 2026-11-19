@@ -9,12 +9,12 @@ LV_IMAGE_DECLARE(robot_happy_L);
 LV_IMAGE_DECLARE(robot_happy_S);
 
 // 入口块：底色、图标渐变、图标、文字
-struct TileDef {
+typedef struct  {
     uint32_t bg;
     lv_style_t *grad;
     const char *icon;
     const char *text;
-};
+}tile_def_t;
 
 /**
  * 去掉 LVGL 默认的滚动，否则容器可以被拖动
@@ -60,7 +60,7 @@ static void create_left(lv_obj_t *scr) {
 /**
  * 一个入口块：图标方块在上，文字在下，竖向居中（设计稿 .tile）
  */
-static lv_obj_t *create_tile(lv_obj_t *parent, const TileDef &def) {
+static lv_obj_t *create_tile(lv_obj_t *parent, const tile_def_t &def) {
     lv_obj_t *tile = lv_button_create(parent);
     lv_obj_remove_style_all(tile);    // 去掉按钮默认的蓝色主题
     lv_obj_add_style(tile, &st_tile, 0);
@@ -99,7 +99,7 @@ static lv_obj_t *create_tile(lv_obj_t *parent, const TileDef &def) {
  * 右侧 2×2 入口块（设计稿 .tiles：x158，y30，每块 73×62，间距 7）
  */
 static void create_tiles(lv_obj_t *scr) {
-    static const TileDef TILES[] = {
+    static const tile_def_t TILES[] = {
         {MDA_TILE_PINK, &st_grad_pink, ICON_MUSIC, "唱歌故事"},
         {MDA_TILE_BLUE, &st_grad_blue, ICON_CHAT, "AI 聊天"},
         {MDA_TILE_GREEN, &st_grad_green, ICON_BOT, "机器人控制"},

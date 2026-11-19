@@ -12,6 +12,8 @@ constexpr uint32_t MDA_VIOLET = 0x8B7CFF, MDA_VIOLET_L = 0xB7A9FF;
 constexpr uint32_t MDA_RED = 0xFF4D6D;
 constexpr uint32_t MDA_NAV_OFF = 0x6F7598;  // 导航栏未选中图标
 constexpr uint32_t MDA_SHADOW = 0x6E64C8;   // 卡片阴影 rgba(110,100,200,.16)
+constexpr uint32_t MDA_YELLOW = 0xFFC93C;
+
 // 入口块底色
 constexpr uint32_t MDA_TILE_PINK = 0xFFD6E7, MDA_TILE_BLUE = 0xD9E8FF, MDA_TILE_GREEN = 0xD4F6E0, MDA_TILE_VIOLET = 0xE6E1FF;
 // 聊天气泡
