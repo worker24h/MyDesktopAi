@@ -24,7 +24,7 @@ void ui_init() {
 
     // 4. 创建页面（目前只有首页，其他页面在 M2 阶段补上）
     s_pages.home = mda_home_create();
-    s_pages.smile = mda_settings_create();
+    s_pages.smile = mda_faces_create();
     s_pages.mic = mda_settings_create();
     s_pages.settings = mda_settings_create();
     lv_screen_load(s_pages.home);
