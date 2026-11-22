@@ -38,6 +38,13 @@ typedef struct {
     mda_slider_type_t slider_type;
 } mda_slider_user_data_t;
 
+// 声音/屏幕亮度最大值是255，但是页面设置上最大值是100，因此需要对应一下
+// 例：0 → 0，50 → 128，60 → 153，80 → 204，100 → 255
+static int mda_convert_max_value(int value) {
+    // 加 50 再除以 100 是四舍五入；直接除会向下取整，比如 50 会得到 127 而不是 128
+    return (value * 255 + 50) / 100;
+}
+
 static void mda_slider_change_event(lv_event_t * event) {
     lv_obj_t *label_text = (lv_obj_t*)lv_event_get_user_data(event);
     lv_obj_t *slider = lv_event_get_current_target_obj(event);
@@ -50,7 +57,6 @@ static void mda_slider_change_event(lv_event_t * event) {
     const char* id = (const char*)lv_obj_get_user_data(slider);//肯定不会为空
     if (strcmp(id, ROW_VOLUME_ID) == 0) {
         M5.Speaker.setVolume(value);
-        M5.Speaker.tone(880, 40); //提示音
     } else {
         M5.Display.setBrightness(value);
     }
