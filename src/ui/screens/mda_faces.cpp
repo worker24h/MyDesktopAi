@@ -23,19 +23,18 @@ LV_IMAGE_DECLARE(robot_think_G);
 #define FACE_WIDTH   72
 #define FACE_RADIUS  12
 
-#define FACE_IMAGES_NUM 12
 typedef struct {
     const lv_image_dsc_t *image;   // 图片（LV_IMAGE_DECLARE 声明的是 const，这里也要 const）
     const char *name;              // 名字（字符串常量是只读的，要用 const char *）
 }mda_face_image_info_t;
 
 // 顺序和名字取自设计稿 EXPR：开心、大笑、惊讶、思考、倾听、唱歌、睡觉、难过、兴奋、调皮、疑惑、说话
-static const mda_face_image_info_t face_images[FACE_IMAGES_NUM] = {
+static const mda_face_image_info_t face_images[] = {
+    {&robot_listen_G, "倾听"},
     {&robot_happy_G, "开心"},
     {&robot_laugh_G, "大笑"},
     {&robot_surprised_G, "惊讶"},
     {&robot_think_G, "思考"},
-    {&robot_listen_G, "倾听"},
     {&robot_sing_G, "唱歌"},
     {&robot_sleep_G, "睡觉"},
     {&robot_sad_G, "难过"},
@@ -45,8 +44,15 @@ static const mda_face_image_info_t face_images[FACE_IMAGES_NUM] = {
     {&robot_talk_G, "说话"},
 };
 
+static void mda_face_clicked_event(lv_event_t * e) {
+    mda_face_image_info_t *user = (mda_face_image_info_t *)lv_event_get_user_data(e);
+    lv_obj_t *face = lv_event_get_current_target_obj(e);
+
+    lv_obj_set_style_border_color(face, lv_color_hex(MDA_COLOR_BLUE), 0); 
+}
+
 static void mda_faces_list_create(lv_obj_t *grid) {
-    for (int i = 0; i < FACE_IMAGES_NUM; i++) {
+    for (int i = 0; i <  MDA_ARRAY_LEN(face_images); i++) {
         lv_obj_t *face = lv_obj_create(grid);
         lv_obj_remove_style_all(face); //去掉默认样式，透明色，pad等
         lv_obj_set_size(face, FACE_WIDTH, FACE_HIGH);
@@ -69,6 +75,8 @@ static void mda_faces_list_create(lv_obj_t *grid) {
         lv_obj_t *label = lv_label_create(face);
         lv_obj_set_style_text_font(label, &font_cn_11b, 0);
         lv_label_set_text(label, face_images[i].name);
+
+        lv_obj_add_event(face, mda_face_clicked_event, LV_EVENT_CLICKED, (void*)&(face_images[i]));
     }
 }
 
