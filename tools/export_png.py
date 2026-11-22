@@ -26,7 +26,7 @@ OUT_BG = ROOT / "tools/assets/png/bg_main.png"
 CHROME = os.environ.get("CHROME", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 
 # 尺寸：L 页面里用 / XL 待机全屏 / M 设置页头像 / S 表情网格
-SIZES = {"L": 120, "XL": 200, "M": 80, "S": 44}  # M：设置页头像（90px 圆里放 80px 宽的机器人）
+SIZES = {"L": 120, "XL": 200, "M": 80, "S": 44, "G": 56}  # M：设置页头像（90px 圆里放 80px 宽的机器人）
 
 # 在设计稿页面里运行：渲染每个机器人，结果写到 <body data-out="...">
 EXPORT_JS = r"""
