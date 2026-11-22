@@ -11,15 +11,16 @@ LV_IMAGE_DECLARE(robot_confused_blink_S);
 static void mda_faces_list_create(lv_obj_t *grid) {
     for (int i = 0; i < 12; i++) {
         lv_obj_t *face = lv_obj_create(grid);
-        lv_obj_remove_style_all(face); //去掉默认样式
+        lv_obj_remove_style_all(face); //去掉默认样式，透明色，pad等
         lv_obj_set_size(face, 72, 70);
         lv_obj_set_style_radius(face, 12, 0);
         lv_obj_remove_flag(face, LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_set_style_bg_color(face, lv_color_hex(MDA_COLOR_RED), 0);
+        lv_obj_set_style_bg_color(face, lv_color_hex(MDA_COLOR_WHITE), 0);   // 设计稿 --card：白色
+        lv_obj_set_style_bg_opa(face, 184, 0);                               // 72% 不透明（255 × 0.72 ≈ 184）
         lv_obj_set_style_border_color(face, lv_color_hex(MDA_COLOR_WHITE), 0);
         lv_obj_set_style_border_width(face, 2, 0);
         //列式排
-        lv_obj_set_flex_flow(face, LV_FLEX_FLOW_COLUMN); 
+        lv_obj_set_flex_flow(face, LV_FLEX_FLOW_COLUMN);
         //垂直水平居中
         lv_obj_set_flex_align(face, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
