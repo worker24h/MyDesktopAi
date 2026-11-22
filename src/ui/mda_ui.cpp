@@ -4,6 +4,7 @@
 #include "screens/mda_screens.h"
 #include "widgets/mda_statusbar.h"
 #include "widgets/mda_menubar.h"
+#include "widgets/mda_robots.h"
 
 // 声明背景图片
 LV_IMAGE_DECLARE(bg_main);
@@ -13,6 +14,7 @@ static mda_pages_t s_pages;
 void ui_init() {
     // 1. 公共样式，必须最先初始化，后面创建的控件都会用到
     theme_init();
+    mda_robot_initalize();
 
     // 2. 背景图铺满全屏
     lv_obj_t *bg = lv_image_create(lv_layer_bottom());
@@ -30,6 +32,6 @@ void ui_init() {
     lv_screen_load(s_pages.home);
 
     // 5. 底部菜单栏：放在 lv_layer_top，所有根页面共用
-    lv_obj_t *menu = mda_menubar_create(&s_pages);
+    mda_menubar_create(&s_pages);
 }
 

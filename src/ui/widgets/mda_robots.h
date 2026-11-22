@@ -12,12 +12,15 @@ typedef struct {
     const lv_image_dsc_t *image_g;   // grid list 页面
 }mda_robot_image_info_t;
 
+int32_t mda_robot_size();
+int32_t mda_robot_actived_index();
+lv_subject_t *mda_robot_get_subject();
+void mda_robot_subscriber(lv_observer_cb_t cb, void *user_data);
 // 更新，将最新的配置写入sd，返回上一次使用的
-uint32_t mda_robot_update(mda_robot_image_info_t *robot);
-uint32_t mda_robot_size();
+int32_t mda_robot_update(mda_robot_image_info_t *robot);
 const mda_robot_image_info_t *mda_get_robot(int index);
+const mda_robot_image_info_t *mda_get_actived_robot();
 
-// 读取sd配置，开机只读取一次，如果没有则初始化第一个
-void mda_robot_load();
+void mda_robot_initalize();
 
 #endif

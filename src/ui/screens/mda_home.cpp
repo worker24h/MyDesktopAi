@@ -3,10 +3,7 @@
 #include "mda_screens.h"
 #include "../mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
-
-//声明图片
-LV_IMAGE_DECLARE(robot_happy_L);
-LV_IMAGE_DECLARE(robot_happy_S);
+#include "ui/widgets/mda_robots.h"
 
 // 入口块：底色、图标渐变、图标、文字
 typedef struct  {
@@ -21,6 +18,15 @@ typedef struct  {
  */
 static void no_scroll(lv_obj_t *obj) {
     lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
+}
+
+//订阅，回调函数
+static void mda_robot_observer_cb(lv_observer_t * observer, lv_subject_t * subject) {
+    // 机器人
+    lv_obj_t *robot = (lv_obj_t *)lv_observer_get_user_data(observer);
+    int32_t active_id = lv_subject_get_int(subject);
+    const mda_robot_image_info_t *actived_robot = mda_get_robot(active_id);
+    lv_image_set_src(robot, actived_robot->image_l);
 }
 
 /**
@@ -54,7 +60,9 @@ static void create_left(lv_obj_t *scr) {
 
     // 机器人
     lv_obj_t *robot = lv_image_create(col);
-    lv_image_set_src(robot, &robot_happy_L);
+    const mda_robot_image_info_t *actived_robot = mda_get_actived_robot();
+    lv_image_set_src(robot, actived_robot->image_l);
+    mda_robot_subscriber(mda_robot_observer_cb, robot);  
 }
 
 /**

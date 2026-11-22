@@ -24,7 +24,7 @@ static void mda_face_clicked_event(lv_event_t * e) {
 
 static void mda_faces_list_create(lv_obj_t *grid) {
     uint32_t size = mda_robot_size();
-    for (int i = 0; i <  size; i++) {
+    for (int i = 0; i < size; i++) {
         lv_obj_t *face = lv_obj_create(grid);
         lv_obj_remove_style_all(face); //去掉默认样式，透明色，pad等
         lv_obj_set_size(face, FACE_WIDTH, FACE_HIGH);
@@ -32,7 +32,11 @@ static void mda_faces_list_create(lv_obj_t *grid) {
         lv_obj_remove_flag(face, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_set_style_bg_color(face, lv_color_hex(MDA_COLOR_WHITE), 0);   // 设计稿 --card：白色
         lv_obj_set_style_bg_opa(face, 184, 0);                               // 72% 不透明（255 × 0.72 ≈ 184）
-        lv_obj_set_style_border_color(face, lv_color_hex(MDA_COLOR_WHITE), 0);
+        if (i == mda_robot_actived_index()) {
+            lv_obj_set_style_border_color(face, lv_color_hex(MDA_COLOR_BLUE), 0);
+        } else {
+            lv_obj_set_style_border_color(face, lv_color_hex(MDA_COLOR_WHITE), 0);
+        }
         lv_obj_set_style_border_width(face, 2, 0);
         //列式排
         lv_obj_set_flex_flow(face, LV_FLEX_FLOW_COLUMN);

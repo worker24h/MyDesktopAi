@@ -3,9 +3,7 @@
 #include "mda_screens.h"
 #include "ui/mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
-
-//声明图片
-LV_IMAGE_DECLARE(robot_happy_M);
+#include "ui/widgets/mda_robots.h"
 
 typedef enum {
     MDA_SLIDER_SPEADKER, 
@@ -40,11 +38,6 @@ typedef struct {
 
 // 声音/屏幕亮度最大值是255，但是页面设置上最大值是100，因此需要对应一下
 // 例：0 → 0，50 → 128，60 → 153，80 → 204，100 → 255
-static int mda_convert_max_value(int value) {
-    // 加 50 再除以 100 是四舍五入；直接除会向下取整，比如 50 会得到 127 而不是 128
-    return (value * 255 + 50) / 100;
-}
-
 static void mda_slider_change_event(lv_event_t * event) {
     lv_obj_t *label_text = (lv_obj_t*)lv_event_get_user_data(event);
     lv_obj_t *slider = lv_event_get_current_target_obj(event);
@@ -148,6 +141,14 @@ static void mda_settings_list_create(lv_obj_t *parent) {
     }
 }
 
+//订阅，回调函数
+static void mda_robot_observer_cb(lv_observer_t * observer, lv_subject_t * subject) {
+    // 机器人
+    lv_obj_t *robot = (lv_obj_t *)lv_observer_get_user_data(observer);
+    int32_t active_id = lv_subject_get_int(subject);
+    const mda_robot_image_info_t *actived_robot = mda_get_robot(active_id);
+    lv_image_set_src(robot, actived_robot->image_m);
+}
 
 lv_obj_t *mda_settings_create() {
     lv_obj_t *settings = lv_obj_create(NULL);
@@ -191,7 +192,9 @@ lv_obj_t *mda_settings_create() {
     lv_obj_set_style_border_width(avatar, 2, 0);
 
     lv_obj_t *image = lv_image_create(avatar);
-    lv_image_set_src(image, &robot_happy_M);   // M 尺寸 80x69，放在 90px 的圆里
+    const mda_robot_image_info_t *robot = mda_get_actived_robot();
+    lv_image_set_src(image, robot->image_m); // M 尺寸 80x69，放在 90px 的圆里
+    mda_robot_subscriber(mda_robot_observer_cb, image);  
     lv_obj_center(image);
 
     // 名字：设计稿 13px 粗体，项目里没有这个字号，用最接近的 14px
