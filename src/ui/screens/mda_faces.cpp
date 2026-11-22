@@ -3,56 +3,28 @@
 #include "config/mda_config.h"
 #include "ui/mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
+#include "ui/widgets/mda_robots.h"
 
-LV_IMAGE_DECLARE(robot_confused_G);
-LV_IMAGE_DECLARE(robot_excited_G);
-LV_IMAGE_DECLARE(robot_happy_G);
-LV_IMAGE_DECLARE(robot_laugh_G);
-LV_IMAGE_DECLARE(robot_listen_G);
-LV_IMAGE_DECLARE(robot_playful_G);
-LV_IMAGE_DECLARE(robot_sad_G);
-LV_IMAGE_DECLARE(robot_sing_G);
-LV_IMAGE_DECLARE(robot_sleep_G);
-LV_IMAGE_DECLARE(robot_surprised_G);
-LV_IMAGE_DECLARE(robot_talk_close_G);
-LV_IMAGE_DECLARE(robot_talk_G);
-LV_IMAGE_DECLARE(robot_think_G);
 
 
 #define FACE_HIGH    70
 #define FACE_WIDTH   72
 #define FACE_RADIUS  12
 
-typedef struct {
-    const lv_image_dsc_t *image;   // 图片（LV_IMAGE_DECLARE 声明的是 const，这里也要 const）
-    const char *name;              // 名字（字符串常量是只读的，要用 const char *）
-}mda_face_image_info_t;
-
-// 顺序和名字取自设计稿 EXPR：开心、大笑、惊讶、思考、倾听、唱歌、睡觉、难过、兴奋、调皮、疑惑、说话
-static const mda_face_image_info_t face_images[] = {
-    {&robot_listen_G, "倾听"},
-    {&robot_happy_G, "开心"},
-    {&robot_laugh_G, "大笑"},
-    {&robot_surprised_G, "惊讶"},
-    {&robot_think_G, "思考"},
-    {&robot_sing_G, "唱歌"},
-    {&robot_sleep_G, "睡觉"},
-    {&robot_sad_G, "难过"},
-    {&robot_excited_G, "兴奋"},
-    {&robot_playful_G, "调皮"},
-    {&robot_confused_G, "疑惑"},
-    {&robot_talk_G, "说话"},
-};
 
 static void mda_face_clicked_event(lv_event_t * e) {
-    mda_face_image_info_t *user = (mda_face_image_info_t *)lv_event_get_user_data(e);
+    mda_robot_image_info_t *robot = (mda_robot_image_info_t *)lv_event_get_user_data(e);
     lv_obj_t *face = lv_event_get_current_target_obj(e);
-
-    lv_obj_set_style_border_color(face, lv_color_hex(MDA_COLOR_BLUE), 0); 
+    uint32_t prev_actived_index = mda_robot_update(robot);
+    lv_obj_t *grid = lv_obj_get_parent(face);
+    lv_obj_t *prev = lv_obj_get_child(grid, prev_actived_index);
+    lv_obj_set_style_border_color(prev, lv_color_hex(MDA_COLOR_WHITE), 0);
+    lv_obj_set_style_border_color(face, lv_color_hex(MDA_COLOR_BLUE), 0);
 }
 
 static void mda_faces_list_create(lv_obj_t *grid) {
-    for (int i = 0; i <  MDA_ARRAY_LEN(face_images); i++) {
+    uint32_t size = mda_robot_size();
+    for (int i = 0; i <  size; i++) {
         lv_obj_t *face = lv_obj_create(grid);
         lv_obj_remove_style_all(face); //去掉默认样式，透明色，pad等
         lv_obj_set_size(face, FACE_WIDTH, FACE_HIGH);
@@ -67,16 +39,16 @@ static void mda_faces_list_create(lv_obj_t *grid) {
         //垂直水平居中
         lv_obj_set_flex_align(face, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-
+        const mda_robot_image_info_t *robot = mda_get_robot(i);
         lv_obj_t *image = lv_image_create(face);
-        lv_image_set_src(image, face_images[i].image);
+        lv_image_set_src(image, robot->image_g);
 
         //设置字体
         lv_obj_t *label = lv_label_create(face);
         lv_obj_set_style_text_font(label, &font_cn_11b, 0);
-        lv_label_set_text(label, face_images[i].name);
+        lv_label_set_text(label, robot->name);
 
-        lv_obj_add_event(face, mda_face_clicked_event, LV_EVENT_CLICKED, (void*)&(face_images[i]));
+        lv_obj_add_event(face, mda_face_clicked_event, LV_EVENT_CLICKED, (void*)robot);
     }
 }
 
