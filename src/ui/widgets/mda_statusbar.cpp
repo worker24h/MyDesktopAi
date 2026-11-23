@@ -108,7 +108,7 @@ static void mda_time_create(lv_obj_t *parent) {
     lv_timer_create(mda_timer_event_cb, TIME_WIFI_REFRESH_MS, time_label);
 }
 
-void mda_statusbar_create() {
+lv_obj_t * mda_statusbar_create() {
     lv_obj_t *status_bar = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(status_bar);    // 透明容器，不要默认的白底和边框
     lv_obj_set_size(status_bar, MDA_SCREEN_WIDTH, MAX_STATUSBAR_HEIGHT);
@@ -120,6 +120,8 @@ void mda_statusbar_create() {
     mda_time_create(status_bar);
     mda_wifi_create(status_bar);
     mda_battery_create(status_bar);
+
+    return status_bar;
 }
 
 

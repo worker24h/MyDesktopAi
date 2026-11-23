@@ -4,10 +4,10 @@
 #include "assets/fonts/mda_fonts.h"
 
 static lv_obj_t *icon_actived = NULL; // 当前高亮的图标
-static lv_obj_t *home;
-static lv_obj_t *smile;
-static lv_obj_t *mic;
-static lv_obj_t *settings;
+static lv_obj_t *icon_home;
+static lv_obj_t *icon_smile;
+static lv_obj_t *icon_mic;
+static lv_obj_t *icon_settings;
 
 /**
  * 创建一个菜单图标。位置由父容器的 flex 布局决定，这里不用 lv_obj_align
@@ -33,16 +33,29 @@ static void mda_menubar_icon_set_active(lv_event_t *e) {
 
     // 1. 先找出目标页面
     lv_obj_t *target = nullptr;
-    if (icon == home) {
+    if (icon == icon_home) {
         target = pages->home;
-    } else if (icon == smile) {
+    } else if (icon == icon_smile) {
         target = pages->smile;
-    } else if (icon == mic) {
+    } else if (icon == icon_mic) {
         target = pages->mic;
-    } else if (icon == settings) {
+    } else if (icon == icon_settings) {
         target = pages->settings;
     } else {
         return;
+    }
+
+    // 如果是mic则将menubar，statusbar设置成隐藏
+    if (icon == icon_mic) {
+        lv_obj_add_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
+        #ifndef MDA_SIM
+        lv_obj_add_flag(pages->status_bar, LV_OBJ_FLAG_HIDDEN);
+        #endif
+    } else {
+        lv_obj_remove_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
+        #ifndef MDA_SIM
+        lv_obj_remove_flag(pages->status_bar, LV_OBJ_FLAG_HIDDEN);
+        #endif
     }
 
     // 3. 页面存在：先切高亮，再切页面
@@ -59,6 +72,7 @@ static void mda_menubar_icon_set_active(lv_event_t *e) {
 lv_obj_t *mda_menubar_create(mda_pages_t *pages) {
     // 放在 top 层：盖在所有页面上面，切页面不用重建；放 bottom 层会被页面挡住，点击也收不到
     lv_obj_t *menubar = lv_obj_create(lv_layer_top());
+    pages->menu_bar = menubar;
     lv_obj_remove_style_all(menubar);                        // 去掉默认主题的白底、边框、内边距
     lv_obj_add_style(menubar, &st_card_strong, 0);
     lv_obj_set_style_bg_opa(menubar, LV_OPA_40, 0);          // 背景不透明度 40%（0~255，可用 LV_OPA_0..LV_OPA_100）
@@ -71,19 +85,19 @@ lv_obj_t *mda_menubar_create(mda_pages_t *pages) {
     lv_obj_set_flex_flow(menubar, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(menubar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    home = mda_menubar_icon_create(menubar, ICON_HOME);
-    lv_obj_set_style_text_color(home, lv_color_hex(MDA_COLOR_PINK), 0);  // 当前页高亮
-    lv_obj_add_event_cb(home, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
-    icon_actived = home;
+    icon_home = mda_menubar_icon_create(menubar, ICON_HOME);
+    lv_obj_set_style_text_color(icon_home, lv_color_hex(MDA_COLOR_PINK), 0);  // 当前页高亮
+    lv_obj_add_event_cb(icon_home, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
+    icon_actived = icon_home;
 
-    smile = mda_menubar_icon_create(menubar, ICON_SMILE);
-    lv_obj_add_event_cb(smile, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
+    icon_smile = mda_menubar_icon_create(menubar, ICON_SMILE);
+    lv_obj_add_event_cb(icon_smile, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
 
-    mic = mda_menubar_icon_create(menubar, ICON_MIC);
-    lv_obj_add_event_cb(mic, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
+    icon_mic = mda_menubar_icon_create(menubar, ICON_MIC);
+    lv_obj_add_event_cb(icon_mic, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
 
-    settings = mda_menubar_icon_create(menubar, ICON_SETTINGS);
-    lv_obj_add_event_cb(settings, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
+    icon_settings = mda_menubar_icon_create(menubar, ICON_SETTINGS);
+    lv_obj_add_event_cb(icon_settings, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
 
     return menubar;
 }

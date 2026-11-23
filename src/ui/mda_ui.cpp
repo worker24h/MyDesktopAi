@@ -5,9 +5,7 @@
 #include "widgets/mda_statusbar.h"
 #include "widgets/mda_menubar.h"
 #include "widgets/mda_robots.h"
-
-// 声明背景图片
-LV_IMAGE_DECLARE(bg_main);
+#include "assets/images/mda_images.h"
 
 static mda_pages_t s_pages;
 
@@ -22,16 +20,17 @@ void ui_init() {
     lv_obj_set_pos(bg, 0, 0);
 
     // 3. 顶部状态栏：时间、电量、WiFi 等
-    mda_statusbar_create();
-
-    // 4. 创建页面（目前只有首页，其他页面在 M2 阶段补上）
+    lv_obj_t *status_bar = mda_statusbar_create();
+    s_pages.status_bar = status_bar;
+    
+    // 4. 创建页面
     s_pages.home = mda_home_create();
     s_pages.smile = mda_faces_create();
-    s_pages.mic = mda_settings_create();
+    s_pages.mic = mda_chat_create();
     s_pages.settings = mda_settings_create();
     lv_screen_load(s_pages.home);
 
     // 5. 底部菜单栏：放在 lv_layer_top，所有根页面共用
-    mda_menubar_create(&s_pages);
+    lv_obj_t *menu_bar = mda_menubar_create(&s_pages);
 }
 

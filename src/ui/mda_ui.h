@@ -9,7 +9,10 @@ typedef struct mda_pages_t {
     lv_obj_t *smile = nullptr;
     lv_obj_t *mic = nullptr;
     lv_obj_t *settings = nullptr;
-}mda_pages_t;
+
+    lv_obj_t *status_bar = nullptr;
+    lv_obj_t *menu_bar = nullptr;
+} mda_pages_t;
 
 
 /**

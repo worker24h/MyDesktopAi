@@ -4,10 +4,10 @@
  * 之后把状态栏的硬件读取抽成接口（第 3 步）后，这个文件就可以删掉。
  */
 #ifdef MDA_SIM
-
 #include "ui/widgets/mda_statusbar.h"
 
-void mda_statusbar_create() {
+lv_obj_t *mda_statusbar_create() {
+    return nullptr;
 }
 
 #endif

@@ -7,5 +7,6 @@
 lv_obj_t *mda_home_create();
 lv_obj_t *mda_settings_create();
 lv_obj_t *mda_faces_create();
+lv_obj_t *mda_chat_create();
 
 #endif
