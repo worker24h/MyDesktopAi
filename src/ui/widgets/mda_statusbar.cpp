@@ -114,7 +114,7 @@ static void mda_time_create(lv_obj_t *parent) {
     }
 }
 
-static void my_btn_event_cb(lv_event_t *e) {
+static void return_btn_event_cb(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_CLICKED) {
         // 处理点击逻辑
@@ -130,19 +130,25 @@ static void mda_return_create(lv_obj_t *parent) {
     lv_obj_set_style_bg_color(btn, lv_color_hex(MDA_COLOR_WHITE), 0);
     lv_obj_set_size(btn, 30, 20);
     lv_obj_set_pos(btn, 5, 2);
-
-    lv_obj_t *return_label = lv_label_create(btn);
-    lv_obj_add_style(return_label, &st_text, 0);   // 颜色用 MDA_COLOR_INK
-    lv_obj_set_style_text_font(return_label, &font_icon_20, 0);  // 字体换成粗体数字，覆盖 st_text 里的字体
-    lv_label_set_text(return_label, ICON_LEFT);
-    lv_obj_center(return_label);
-    lv_obj_add_event_cb(btn, my_btn_event_cb, LV_EVENT_CLICKED, nullptr);
+    lv_obj_add_event_cb(btn, return_btn_event_cb, LV_EVENT_CLICKED, nullptr);
 
     if (time_return_show == 1) {
         lv_obj_remove_flag(btn, LV_OBJ_FLAG_HIDDEN);
     } else {
         lv_obj_add_flag(btn, LV_OBJ_FLAG_HIDDEN);
     }
+
+    lv_obj_t *return_label = lv_label_create(btn);
+    lv_obj_add_style(return_label, &st_text, 0);   // 颜色用 MDA_COLOR_INK
+    lv_obj_set_style_text_font(return_label, &font_icon_20, 0);
+    lv_label_set_text(return_label, ICON_LEFT);
+    lv_obj_center(return_label);
+
+    lv_obj_t *ai_assistant_label = lv_label_create(parent);
+    lv_obj_add_style(ai_assistant_label, &st_text2, 0);
+    lv_obj_set_style_text_font(ai_assistant_label, &font_cn_11b, 0);
+    lv_label_set_text(ai_assistant_label, "AI助手");
+    lv_obj_set_pos(ai_assistant_label, 40, 5);
 }
 
 lv_obj_t * mda_statusbar_create() {
