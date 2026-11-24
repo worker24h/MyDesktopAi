@@ -91,10 +91,6 @@ int32_t mda_robot_actived_index() {
     return robot_active_id;
 }
 
-lv_subject_t *mda_robot_get_subject() {
-    return &subject_robot_active_id;
-}
-
 void mda_robot_subscriber(lv_observer_cb_t cb, void *user_data) {
     lv_subject_add_observer(&subject_robot_active_id, cb, user_data);
 }

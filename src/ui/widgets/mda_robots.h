@@ -14,7 +14,7 @@ typedef struct {
 
 int32_t mda_robot_size();
 int32_t mda_robot_actived_index();
-lv_subject_t *mda_robot_get_subject();
+
 void mda_robot_subscriber(lv_observer_cb_t cb, void *user_data);
 // 更新，将最新的配置写入sd，返回上一次使用的
 int32_t mda_robot_update(mda_robot_image_info_t *robot);

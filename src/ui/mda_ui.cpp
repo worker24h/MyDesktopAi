@@ -31,6 +31,6 @@ void ui_init() {
     lv_screen_load(s_pages.home);
 
     // 5. 底部菜单栏：放在 lv_layer_top，所有根页面共用
-    lv_obj_t *menu_bar = mda_menubar_create(&s_pages);
+    s_pages.menu_bar = mda_menubar_create(&s_pages);
 }
 

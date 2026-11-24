@@ -2,6 +2,7 @@
 #include "mda_menubar.h"
 #include "../mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
+#include "mda_statusbar.h"
 
 static lv_obj_t *icon_actived = NULL; // 当前高亮的图标
 static lv_obj_t *icon_home;
@@ -48,14 +49,12 @@ static void mda_menubar_icon_set_active(lv_event_t *e) {
     // 如果是mic则将menubar，statusbar设置成隐藏
     if (icon == icon_mic) {
         lv_obj_add_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
-        if (pages->status_bar) {
-            lv_obj_add_flag(pages->status_bar, LV_OBJ_FLAG_HIDDEN);
-        }
+        //将return btn设置显示，时间设置隐藏
+        mda_statusbar_notify(1);
     } else {
         lv_obj_remove_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
-        if (pages->status_bar) {
-            lv_obj_remove_flag(pages->status_bar, LV_OBJ_FLAG_HIDDEN);
-        }
+        //将return btn设置隐藏，时间设置显示
+        mda_statusbar_notify(0);
     }
 
     // 3. 页面存在：先切高亮，再切页面
@@ -72,7 +71,6 @@ static void mda_menubar_icon_set_active(lv_event_t *e) {
 lv_obj_t *mda_menubar_create(mda_pages_t *pages) {
     // 放在 top 层：盖在所有页面上面，切页面不用重建；放 bottom 层会被页面挡住，点击也收不到
     lv_obj_t *menubar = lv_obj_create(lv_layer_top());
-    pages->menu_bar = menubar;
     lv_obj_remove_style_all(menubar);                        // 去掉默认主题的白底、边框、内边距
     lv_obj_add_style(menubar, &st_card_strong, 0);
     lv_obj_set_style_bg_opa(menubar, LV_OPA_40, 0);          // 背景不透明度 40%（0~255，可用 LV_OPA_0..LV_OPA_100）

@@ -13,7 +13,9 @@
 #define TIME_WIFI_REFRESH_MS 1000   // 时间&wifi刷新时间
 #define BATTERY_REFRESH_MS 2000     // 电量刷新间隔
 
-static int time_return_show = 1; // 0 显示time，1 显示return按钮
+static lv_subject_t subject_status_bar; //订阅对象
+static lv_obj_t *time_label;
+static lv_obj_t *return_btn_flex;
 
 // lv_timer 回调：由 loop() 里的 lv_timer_handler() 定时调用
 static void mda_wifi_event_cb(lv_timer_t *timer) {
@@ -96,7 +98,7 @@ static void mda_timer_event_cb(lv_timer_t *timer) {
     return;
 }
 
-static void mda_time_create(lv_obj_t *parent) {
+static lv_obj_t *mda_time_create(lv_obj_t *parent) {
     char buf[8] = {0};
     if (!mda_date_format_custom("%H:%M", buf, sizeof(buf))) {
         strncpy(buf, "--:--", 6);
@@ -107,11 +109,7 @@ static void mda_time_create(lv_obj_t *parent) {
     lv_label_set_text(time_label, buf);
     lv_obj_align(time_label, LV_ALIGN_LEFT_MID, 10, 0);
     lv_timer_create(mda_timer_event_cb, TIME_WIFI_REFRESH_MS, time_label);
-    if (time_return_show == 0) {
-        lv_obj_remove_flag(time_label, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(time_label, LV_OBJ_FLAG_HIDDEN);
-    }
+    return time_label;
 }
 
 static void return_btn_event_cb(lv_event_t *e) {
@@ -122,8 +120,13 @@ static void return_btn_event_cb(lv_event_t *e) {
     }
 }
 
-static void mda_return_create(lv_obj_t *parent) {
-    lv_obj_t *btn = lv_button_create(parent);
+static lv_obj_t *mda_return_create(lv_obj_t *parent) {
+    lv_obj_t *flex = lv_obj_create(parent);
+    lv_obj_remove_style_all(flex);
+    lv_obj_set_flex_flow(flex, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(flex, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    
+    lv_obj_t *btn = lv_button_create(flex);
     lv_obj_remove_style_all(btn);
     lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(btn, 15, 0);
@@ -131,12 +134,7 @@ static void mda_return_create(lv_obj_t *parent) {
     lv_obj_set_size(btn, 30, 20);
     lv_obj_set_pos(btn, 5, 2);
     lv_obj_add_event_cb(btn, return_btn_event_cb, LV_EVENT_CLICKED, nullptr);
-
-    if (time_return_show == 1) {
-        lv_obj_remove_flag(btn, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(btn, LV_OBJ_FLAG_HIDDEN);
-    }
+    lv_obj_add_flag(btn, LV_OBJ_FLAG_HIDDEN); //默认不显示
 
     lv_obj_t *return_label = lv_label_create(btn);
     lv_obj_add_style(return_label, &st_text, 0);   // 颜色用 MDA_COLOR_INK
@@ -144,11 +142,30 @@ static void mda_return_create(lv_obj_t *parent) {
     lv_label_set_text(return_label, ICON_LEFT);
     lv_obj_center(return_label);
 
-    lv_obj_t *ai_assistant_label = lv_label_create(parent);
+    lv_obj_t *ai_assistant_label = lv_label_create(flex);
     lv_obj_add_style(ai_assistant_label, &st_text2, 0);
     lv_obj_set_style_text_font(ai_assistant_label, &font_cn_11b, 0);
     lv_label_set_text(ai_assistant_label, "AI助手");
     lv_obj_set_pos(ai_assistant_label, 40, 5);
+
+    return flex;
+}
+
+static void mda_robot_observer_cb(lv_observer_t * observer, lv_subject_t * subject) {
+    // 机器人
+    lv_obj_t *robot = (lv_obj_t *)lv_observer_get_user_data(observer);
+    int32_t return_show = lv_subject_get_int(subject);
+    if (return_show == 1) {
+        lv_obj_add_flag(time_label, LV_OBJ_FLAG_HIDDEN); //time设置隐藏
+        lv_obj_remove_flag(return_btn_flex, LV_OBJ_FLAG_HIDDEN); //return_btn设置显示
+    } else {
+        lv_obj_remove_flag(time_label, LV_OBJ_FLAG_HIDDEN); //time设置显示
+        lv_obj_add_flag(return_btn_flex, LV_OBJ_FLAG_HIDDEN); //return_btn设置隐藏
+    }
+}
+
+void mda_statusbar_notify(int32_t value) {
+    lv_subject_set_int(&subject_status_bar, value);
 }
 
 lv_obj_t * mda_statusbar_create() {
@@ -160,11 +177,13 @@ lv_obj_t * mda_statusbar_create() {
     lv_obj_remove_flag(status_bar, LV_OBJ_FLAG_CLICKABLE);    //不可点击
 
     // 创建时间、Wi-Fi、和电量图标
-    mda_time_create(status_bar);
-    mda_return_create(status_bar);
+    time_label = mda_time_create(status_bar);
+    return_btn_flex = mda_return_create(status_bar);
     mda_wifi_create(status_bar);
     mda_battery_create(status_bar);
 
+    //设置订阅
+    lv_subject_add_observer(&subject_status_bar, mda_robot_observer_cb, NULL);
     return status_bar;
 }
 
