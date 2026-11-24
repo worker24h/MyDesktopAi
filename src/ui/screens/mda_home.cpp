@@ -62,7 +62,7 @@ static void create_left(lv_obj_t *scr) {
     lv_obj_t *robot = lv_image_create(col);
     const mda_robot_image_info_t *actived_robot = mda_get_actived_robot();
     lv_image_set_src(robot, actived_robot->image_l);
-    mda_robot_subscriber(mda_robot_observer_cb, robot);  
+    mda_robot_subscriber(mda_robot_observer_cb, robot);  //订阅样式
 }
 
 /**

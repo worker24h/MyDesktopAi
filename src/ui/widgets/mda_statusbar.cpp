@@ -1,6 +1,7 @@
 #include <string.h>
 #include <lvgl.h>
 #include "mda_battery.h"
+#include "mda_toast.h"
 #include "config/mda_config.h"
 #include "ui/mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
@@ -8,11 +9,11 @@
 #include "mda_statusbar.h"
 #include "mda_network.h"
 
-
 #define MAX_STATUSBAR_HEIGHT 22
 #define TIME_WIFI_REFRESH_MS 1000   // 时间&wifi刷新时间
 #define BATTERY_REFRESH_MS 2000     // 电量刷新间隔
 
+static int time_return_show = 1; // 0 显示time，1 显示return按钮
 
 // lv_timer 回调：由 loop() 里的 lv_timer_handler() 定时调用
 static void mda_wifi_event_cb(lv_timer_t *timer) {
@@ -106,17 +107,42 @@ static void mda_time_create(lv_obj_t *parent) {
     lv_label_set_text(time_label, buf);
     lv_obj_align(time_label, LV_ALIGN_LEFT_MID, 10, 0);
     lv_timer_create(mda_timer_event_cb, TIME_WIFI_REFRESH_MS, time_label);
+    if (time_return_show == 0) {
+        lv_obj_remove_flag(time_label, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(time_label, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static void my_btn_event_cb(lv_event_t *e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if (code == LV_EVENT_CLICKED) {
+        // 处理点击逻辑
+        mda_toast_show("开心", &font_cn_11b, 1400);
+    }
 }
 
 static void mda_return_create(lv_obj_t *parent) {
-    lv_obj_t *return_label = lv_label_create(parent);
-    lv_obj_set_style_radius(return_label, 15, 0);
-    lv_obj_set_style_bg_color(return_label, lv_color_hex(MDA_COLOR_WHITE), 0);
+    lv_obj_t *btn = lv_button_create(parent);
+    lv_obj_remove_style_all(btn);
+    lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
+    lv_obj_set_style_radius(btn, 15, 0);
+    lv_obj_set_style_bg_color(btn, lv_color_hex(MDA_COLOR_WHITE), 0);
+    lv_obj_set_size(btn, 30, 20);
+    lv_obj_set_pos(btn, 5, 2);
 
+    lv_obj_t *return_label = lv_label_create(btn);
     lv_obj_add_style(return_label, &st_text, 0);   // 颜色用 MDA_COLOR_INK
     lv_obj_set_style_text_font(return_label, &font_icon_20, 0);  // 字体换成粗体数字，覆盖 st_text 里的字体
     lv_label_set_text(return_label, ICON_LEFT);
-    //lv_obj_center(icon);
+    lv_obj_center(return_label);
+    lv_obj_add_event_cb(btn, my_btn_event_cb, LV_EVENT_CLICKED, nullptr);
+
+    if (time_return_show == 1) {
+        lv_obj_remove_flag(btn, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(btn, LV_OBJ_FLAG_HIDDEN);
+    }
 }
 
 lv_obj_t * mda_statusbar_create() {
