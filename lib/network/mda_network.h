@@ -2,8 +2,7 @@
 #define MDA_NETWORK_H
 
 #include <stdint.h>
-#include <Arduino.h>
-
+#include <string>
 // 在这里填写要连接的 WiFi。注意：ESP32 只支持 2.4GHz WiFi，不支持 5GHz。
 // 不要把这个文件提交到公开仓库。
 #define WIFI_SSID     "your-ssid"
@@ -25,11 +24,11 @@ enum WifiStaState {
 
 struct WifiStaStatus {
   WifiStaState state;
-  String ssid;          // 配置的 SSID
-  String ip;            // 已连接时的 IP
+  std::string ssid;          // 配置的 SSID
+  std::string ip;            // 已连接时的 IP
   int rssi;             // 已连接时的信号强度 dBm
   uint8_t lastReason;   // 最近一次断开原因码（wifi_err_reason_t），0 表示无
-  String lastReasonName;
+  std::string lastReasonName;
   uint32_t retryInMs;   // Failed 状态下距下次重试的毫秒数
   uint8_t attempts;     // 本轮已尝试连接的次数（连上后清零）
   uint8_t maxAttempts;  // 最多尝试次数

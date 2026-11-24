@@ -1,6 +1,6 @@
 #include <string.h>
 #include <lvgl.h>
-#include "M5Unified.h"
+#include "mda_battery.h"
 #include "config/mda_config.h"
 #include "ui/mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
@@ -46,14 +46,14 @@ static void mda_wifi_create(lv_obj_t *parent) {
 // 根据当前电源状态选图标和颜色
 static void mda_battery_update(lv_obj_t *battery_label) {
     lv_obj_set_style_text_color(battery_label, lv_color_hex(MDA_COLOR_INK), 0); //默认颜色
-    if (M5.Power.getVBUSVoltage() > 4000 && !M5.Power.getUsbOutput()) {// 说明是外接电源供电, 且不是输出
+    if (mda_is_external_battery()) {// 说明是外接电源供电, 且不是输出
         lv_label_set_text(battery_label, ICON_BATTERY_FULL);
         return;
     }
-    if (M5.Power.isCharging() == m5::Power_Class::is_charging) {
+    if (mda_is_charging()) {
         lv_label_set_text(battery_label, ICON_BATTERY_CHARGIN);
     } else {
-        int battery_level = M5.Power.getBatteryLevel();
+        int battery_level = mda_battery_level();
         if (battery_level >= 90) {
             lv_label_set_text(battery_label, ICON_BATTERY_FULL);
         } else if (battery_level >= 30) {
@@ -108,6 +108,17 @@ static void mda_time_create(lv_obj_t *parent) {
     lv_timer_create(mda_timer_event_cb, TIME_WIFI_REFRESH_MS, time_label);
 }
 
+static void mda_return_create(lv_obj_t *parent) {
+    lv_obj_t *return_label = lv_label_create(parent);
+    lv_obj_set_style_radius(return_label, 15, 0);
+    lv_obj_set_style_bg_color(return_label, lv_color_hex(MDA_COLOR_WHITE), 0);
+
+    lv_obj_add_style(return_label, &st_text, 0);   // 颜色用 MDA_COLOR_INK
+    lv_obj_set_style_text_font(return_label, &font_icon_20, 0);  // 字体换成粗体数字，覆盖 st_text 里的字体
+    lv_label_set_text(return_label, ICON_LEFT);
+    //lv_obj_center(icon);
+}
+
 lv_obj_t * mda_statusbar_create() {
     lv_obj_t *status_bar = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(status_bar);    // 透明容器，不要默认的白底和边框
@@ -118,6 +129,7 @@ lv_obj_t * mda_statusbar_create() {
 
     // 创建时间、Wi-Fi、和电量图标
     mda_time_create(status_bar);
+    mda_return_create(status_bar);
     mda_wifi_create(status_bar);
     mda_battery_create(status_bar);
 
