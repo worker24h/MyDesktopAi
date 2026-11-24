@@ -1,37 +1,20 @@
 #include "mda_logger.h"
 
+#ifndef MDA_SIM
 #include <SD.h>
 #include <sys/time.h>
 #include <time.h>
+#else
+#include <sys/time.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <string.h>
+#endif
 
 MdaLogger logger;
 
 static const char LEVEL_CHARS[] = {'D', 'I', 'W', 'E'};
-
-
-bool MdaLogger::initialize(const LoggerConfig &cfg) {
-    if (_task) {
-        return _fileOpen;    // 已经启动过
-    }
-    _cfg = cfg;
-
-    _queue = xQueueCreate(_cfg.queueLength, sizeof(LoggerItem));
-    _fileMutex = xSemaphoreCreateMutex();
-    if (!_queue || !_fileMutex) {
-        Serial.println("[logger] create queue/mutex failed");
-        return false;
-    }
-
-    xSemaphoreTake(_fileMutex, portMAX_DELAY);
-    bool ok = openFile();
-    xSemaphoreGive(_fileMutex);
-
-    // 写入任务优先级低于 loopTask(1)，SD 卡写入不会抢占业务逻辑
-    xTaskCreate(taskEntry, "sdlog", 4096, this, tskIDLE_PRIORITY + 1, &_task);
-
-    info("logger", "started, file=%s, sd=%s", pathFor(0).c_str(), ok ? "ok" : "unavailable");
-    return ok;
-}
 
 void MdaLogger::log(Level level, const char *tag, const char *fmt, ...) {
     va_list ap;
@@ -66,6 +49,34 @@ void MdaLogger::error(const char *tag, const char *fmt, ...) {
     va_start(ap, fmt);
     vlog(Level::Error, tag, fmt, ap);
     va_end(ap);
+}
+
+#ifndef MDA_SIM
+
+// ==================== 真机 ESP32 + FreeRTOS + SD 实现 ====================
+
+bool MdaLogger::initialize(const LoggerConfig &cfg) {
+    if (_task) {
+        return _fileOpen;    // 已经启动过
+    }
+    _cfg = cfg;
+
+    _queue = xQueueCreate(_cfg.queueLength, sizeof(LoggerItem));
+    _fileMutex = xSemaphoreCreateMutex();
+    if (!_queue || !_fileMutex) {
+        Serial.println("[logger] create queue/mutex failed");
+        return false;
+    }
+
+    xSemaphoreTake(_fileMutex, portMAX_DELAY);
+    bool ok = openFile();
+    xSemaphoreGive(_fileMutex);
+
+    // 写入任务优先级低于 loopTask(1)，SD 卡写入不会抢占业务逻辑
+    xTaskCreate(taskEntry, "sdlog", 4096, this, tskIDLE_PRIORITY + 1, &_task);
+
+    info("logger", "started, file=%s, sd=%s", pathFor(0).c_str(), ok ? "ok" : "unavailable");
+    return ok;
 }
 
 bool MdaLogger::flush(uint32_t timeoutMs) {
@@ -219,8 +230,6 @@ void MdaLogger::taskLoop() {
     }
 }
 
-// 以下函数都在持有 _fileMutex 时调用
-
 void MdaLogger::writeItem(const LoggerItem &item) {
     writeRaw(item.text, item.len);
 }
@@ -231,7 +240,6 @@ void MdaLogger::writeRaw(const char *text, size_t len) {
     }
     if (_fileOpen) {
         if (_file.write((const uint8_t *)text, len) != len) {
-            // 写失败（卡被拔出等）：关闭文件，之后只输出串口，可调用 resume() 恢复
             Serial.println("[logger] write failed, file closed");
             closeFile();
             return;
@@ -261,17 +269,12 @@ void MdaLogger::closeFile() {
     _dirty = false;
 }
 
-/**
- * 滚动保存日志
- */
 void MdaLogger::rotateIfNeeded() {
-    // 用 position() 而不是 size()：追加模式下位置就是文件末尾，且不受未落盘缓存影响
     if (!_fileOpen || _file.position() < _cfg.maxFileSize) {
         return;
     }
 
     closeFile();
-    // app.(N-1).log -> app.N.log ... app.log -> app.1.log，最旧的删除
     if (_cfg.maxBackups > 0) {
         String oldest = pathFor(_cfg.maxBackups);
         if (SD.exists(oldest)) {
@@ -298,9 +301,6 @@ String MdaLogger::pathFor(int index) const {
     return p + ".log";
 }
 
-/**
- * 逐级创建目录，如 /data/logs 会依次创建 /data、/data/logs
- */
 bool MdaLogger::ensureDir(const char *dir) {
     String path(dir);
     if (path.length() == 0 || path == "/") {
@@ -322,3 +322,141 @@ bool MdaLogger::ensureDir(const char *dir) {
     }
     return true;
 }
+
+#else
+
+// ==================== 电脑仿真（MDA_SIM）实现：写入本地文件 + 控制台 ====================
+
+bool MdaLogger::initialize(const LoggerConfig &cfg) {
+    _cfg = cfg;
+    bool ok = openFile();
+    info("logger", "started in sim mode, file=%s, status=%s", pathFor(0).c_str(), ok ? "ok" : "failed");
+    return ok;
+}
+
+bool MdaLogger::ensureDir(const char *dir) {
+    if (!dir || strlen(dir) == 0 || strcmp(dir, ".") == 0 || strcmp(dir, "/") == 0) {
+        return true;
+    }
+    char tmp[256];
+    snprintf(tmp, sizeof(tmp), "%s", dir);
+    size_t len = strlen(tmp);
+    for (size_t i = 1; i < len; i++) {
+        if (tmp[i] == '/') {
+            tmp[i] = '\0';
+            mkdir(tmp, 0755);
+            tmp[i] = '/';
+        }
+    }
+    mkdir(tmp, 0755);
+    return true;
+}
+
+std::string MdaLogger::pathFor(int index) const {
+    std::string p = std::string(_cfg.dir) + "/" + _cfg.baseName;
+    if (index > 0) {
+        p += "." + std::to_string(index);
+    }
+    return p + ".log";
+}
+
+bool MdaLogger::openFile() {
+    closeFile();
+    ensureDir(_cfg.dir);
+    std::string path = pathFor(0);
+    _file = fopen(path.c_str(), "a");
+    _fileOpen = (_file != nullptr);
+    return _fileOpen;
+}
+
+void MdaLogger::closeFile() {
+    if (_file) {
+        fflush(_file);
+        fclose(_file);
+        _file = nullptr;
+    }
+    _fileOpen = false;
+}
+
+void MdaLogger::rotateIfNeeded() {
+    if (!_file) return;
+    long sz = ftell(_file);
+    if (sz < 0 || (size_t)sz < _cfg.maxFileSize) {
+        return;
+    }
+    closeFile();
+    if (_cfg.maxBackups > 0) {
+        std::string oldest = pathFor(_cfg.maxBackups);
+        remove(oldest.c_str());
+        for (int i = (int)_cfg.maxBackups - 1; i >= 0; i--) {
+            std::string from = pathFor(i);
+            std::string to = pathFor(i + 1);
+            rename(from.c_str(), to.c_str());
+        }
+    } else {
+        remove(pathFor(0).c_str());
+    }
+    openFile();
+}
+
+void MdaLogger::writeItem(const LoggerItem &item) {
+    writeRaw(item.text, item.len);
+}
+
+void MdaLogger::writeRaw(const char *text, size_t len) {
+    if (_cfg.echoSerial) {
+        fwrite(text, 1, len, stdout);
+        fflush(stdout);
+    }
+    if (_fileOpen && _file) {
+        fwrite(text, 1, len, _file);
+        fflush(_file);
+    }
+}
+
+void MdaLogger::vlog(Level level, const char *tag, const char *fmt, va_list ap) {
+    if (level < _cfg.minLevel) return;
+
+    LoggerItem item;
+    size_t n = 0;
+    const size_t cap = MAX_LINE_LEN - 1;
+
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    struct tm tmv;
+    localtime_r(&tv.tv_sec, &tmv);
+    n = strftime(item.text, cap, "%Y-%m-%d %H:%M:%S", &tmv);
+    n += snprintf(item.text + n, cap - n, ".%03ld", (long)(tv.tv_usec / 1000));
+
+    int w = snprintf(item.text + n, cap - n, " %c [sim] %s: ", LEVEL_CHARS[(uint8_t)level], tag ? tag : "-");
+    if (w > 0) n += ((size_t)w < cap - n) ? (size_t)w : cap - n - 1;
+
+    w = vsnprintf(item.text + n, cap - n, fmt, ap);
+    if (w > 0) n += ((size_t)w < cap - n) ? (size_t)w : cap - n - 1;
+
+    for (size_t i = 0; i < n; i++) {
+        if (item.text[i] == '\n' || item.text[i] == '\r') item.text[i] = ' ';
+    }
+    item.text[n++] = '\n';
+    item.len = (uint16_t)n;
+
+    writeItem(item);
+    rotateIfNeeded();
+}
+
+bool MdaLogger::flush(uint32_t timeoutMs) {
+    if (_file) fflush(_file);
+    return true;
+}
+
+void MdaLogger::suspend() {
+    closeFile();
+    _suspended = true;
+}
+
+bool MdaLogger::resume() {
+    _suspended = false;
+    return openFile();
+}
+
+#endif

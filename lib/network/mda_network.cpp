@@ -1,6 +1,5 @@
 
 #include "mda_network.h"
-#ifndef MDA_SIM
 #include <WiFi.h>
 #include "mda_logger.h"
 static const uint32_t STA_RETRY_INTERVAL_MS = 15000;  // 失败后多久重试一次
@@ -181,37 +180,3 @@ const char *wifi_sta_state_name(WifiStaState state) {
     }
 }
 
-#else
-// 仿真场景直接返回 true
-bool wifi_start_ap_sta(const char *apSsid, const char *apPassword) {
-    return true;
-}
-
-void wifi_sta_connect(const char *ssid, const char *password) {
-    // donothing
-}
-
-void wifi_sta_loop() {
-  // donothing
-}
-
-WifiStaStatus wifi_sta_get_status() {
-    struct WifiStaStatus status;
-    status.state = Connected;
-    status.ssid = "demo-wifi";
-    status.ip = "127.0.0.1";
-    status.rssi = 80;
-    status.lastReason = 0;
-    status.lastReasonName = "";
-    status.retryInMs = 10;
-    status.attempts = 10;
-    status.maxAttempts = 10;
-    return status;
-}
-
-
-const char *wifi_sta_state_name(WifiStaState state) {
-    return "connected";
-}
-
-#endif

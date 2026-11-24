@@ -1,18 +1,21 @@
 /**
- * 电脑仿真入口：只在 env:sim（定义了 MDA_SIM）里编译。
- * ESP32 固件用的是 src/main.cpp 里的 setup()/loop()，这个文件在那边是空的。
+ * 电脑仿真入口：只在 env:sim 里编译。
+ * ESP32 固件用的是 src/main.cpp 里的 setup()/loop()。
  */
-#ifdef MDA_SIM
-
 #include <unistd.h>
 #include <lvgl.h>
 #include LV_SDL_INCLUDE_PATH
 #include "config/mda_config.h"
 #include "ui/mda_ui.h"
+#include "mda_logger.h"
 
 static constexpr int WINDOW_ZOOM = 1;    // 窗口放大倍数：1 = 窗口就是 320x240，和真机屏幕一样大
 
 int main() {
+    // 启动仿真日志（输出到控制台及本地文件）
+    logger.initialize();
+    logger.info("sim", "Desktop AI simulator starting...");
+
     lv_init();
 
     // 放大时用最近邻采样（像素直接复制成方块），不做线性插值，避免文字和图标发虚
@@ -27,6 +30,8 @@ int main() {
 
     ui_init();
 
+    logger.info("sim", "UI initialized successfully");
+
     // 对应真机 loop() 里的 lv_timer_handler()；关闭窗口时 SDL 驱动会直接退出程序
     while (true) {
         uint32_t idle_ms = lv_timer_handler();
@@ -37,5 +42,3 @@ int main() {
     }
     return 0;
 }
-
-#endif

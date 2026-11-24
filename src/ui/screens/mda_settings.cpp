@@ -1,5 +1,6 @@
+#include <string.h>
 #include <lvgl.h>
-#include <M5Unified.h>
+#include "hal/mda_device.h"
 #include "mda_screens.h"
 #include "ui/mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
@@ -43,17 +44,12 @@ static void mda_slider_change_event(lv_event_t * event) {
     lv_obj_t *slider = lv_event_get_current_target_obj(event);
     int32_t v = lv_slider_get_value(slider);
     lv_label_set_text_fmt(label_text, "%" LV_PRId32, v);
-    #ifndef MDA_SIM
-    // 真实设备
-    // 加 50 再除以 100 是四舍五入；直接除会向下取整，比如 50 会得到 127 而不是 128
-    uint8_t value = (uint8_t)((v * 255 + 50) / 100);
-    const char* id = (const char*)lv_obj_get_user_data(slider);//肯定不会为空
-    if (strcmp(id, ROW_VOLUME_ID) == 0) {
-        M5.Speaker.setVolume(value);
+    const char* id = (const char*)lv_obj_get_user_data(slider);
+    if (id && strcmp(id, ROW_VOLUME_ID) == 0) {
+        mda_device_set_volume((uint8_t)v);
     } else {
-        M5.Display.setBrightness(value);
+        mda_device_set_brightness((uint8_t)v);
     }
-    #endif
 }
 
 static lv_obj_t *mda_settings_row_create(lv_obj_t *parent, const mda_settings_row_def_t &param) {

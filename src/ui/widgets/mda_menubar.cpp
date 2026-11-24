@@ -48,14 +48,14 @@ static void mda_menubar_icon_set_active(lv_event_t *e) {
     // 如果是mic则将menubar，statusbar设置成隐藏
     if (icon == icon_mic) {
         lv_obj_add_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
-        #ifndef MDA_SIM
-        lv_obj_add_flag(pages->status_bar, LV_OBJ_FLAG_HIDDEN);
-        #endif
+        if (pages->status_bar) {
+            lv_obj_add_flag(pages->status_bar, LV_OBJ_FLAG_HIDDEN);
+        }
     } else {
         lv_obj_remove_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
-        #ifndef MDA_SIM
-        lv_obj_remove_flag(pages->status_bar, LV_OBJ_FLAG_HIDDEN);
-        #endif
+        if (pages->status_bar) {
+            lv_obj_remove_flag(pages->status_bar, LV_OBJ_FLAG_HIDDEN);
+        }
     }
 
     // 3. 页面存在：先切高亮，再切页面
