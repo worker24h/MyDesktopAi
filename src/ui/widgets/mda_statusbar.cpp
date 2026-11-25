@@ -30,9 +30,9 @@ typedef struct {
 
 static mda_mixed_compoent compoents[4] = {
     {"time_label", "", false},
-    {"return_btn", "", false},
-    {"ai_assistant", "AI助手",  false},
-    {"device_manager", "设备管理", false},
+    {"return_btn", "", true},
+    {"ai_assistant", "AI助手",  true},
+    {"device_manager", "设备管理", true},
 };
 
 // lv_timer 回调：由 loop() 里的 lv_timer_handler() 定时调用
@@ -141,7 +141,7 @@ static void return_btn_event_cb(lv_event_t *e) {
         }
         // 2. 切回上一次页面，恢复底部菜单栏图标高亮
         if (s_pages_ptr->last_page) {
-            logger.info("statusbar", "s_pages_ptr->last_page=0x%p", s_pages_ptr->last_page);
+            logger.info("statusbar", "s_pages_ptr->last_page=%p", s_pages_ptr->last_page);
             mda_switch_page(s_pages_ptr->last_page);
         }
     }
@@ -167,7 +167,7 @@ static lv_obj_t *mda_return_create(lv_obj_t *parent,  mda_mixed_compoent compoen
     lv_label_set_text(return_label, ICON_LEFT);
     lv_obj_center(return_label);
     if (compoent.is_hidden) {
-        lv_obj_add_flag(s_title_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(btn, LV_OBJ_FLAG_HIDDEN);
     }
     return btn;
 }
@@ -193,10 +193,10 @@ static void mda_mixed_compoents(lv_obj_t *parent) {
     lv_obj_align(flex_compoent, LV_ALIGN_LEFT_MID, 10, 0);
     lv_obj_set_flex_flow(flex_compoent, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(flex_compoent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_bg_color(flex_compoent, lv_color_hex(MDA_COLOR_BLUE), 0);
-    lv_obj_set_style_bg_opa(flex_compoent, 255, 0);
     lv_obj_set_style_pad_column(flex_compoent, 6, 0);        // 按钮与文字间距 6px
     //lv_obj_add_flag(flex_compoent, LV_OBJ_FLAG_HIDDEN);      // 默认不显示
+    //lv_obj_set_style_bg_color(flex_compoent, lv_color_hex(MDA_COLOR_BLUE), 0);
+    //lv_obj_set_style_bg_opa(flex_compoent, 255, 0);
 
     time_label = mda_time_create(flex_compoent, compoents[0]);
     return_btn_flex = mda_return_create(flex_compoent, compoents[1]);
