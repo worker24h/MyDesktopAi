@@ -27,9 +27,9 @@ void setup() {
 
     int count = 3;
     while (!Serial && count > 0) {
-        ; // 最多等 3 秒串口连接，超时后继续运行
+        // 最多等 3 秒串口连接，超时后继续运行
         delay(1000);
-        M5.Display.printf("Initial CoreS3, waiting for Serial, %d", count--);
+        //M5.Display.printf("Initial CoreS3, waiting for Serial, %d", count--);
     }
 
     // 1. 存储：挂载 SD 卡，初始化数据目录 /data、/data/config、/data/logs
