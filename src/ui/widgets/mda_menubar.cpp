@@ -76,7 +76,7 @@ static void mda_menubar_chat_icon_actived(lv_event_t *e) {
      */ 
     lv_obj_t *parent = lv_obj_get_parent(icon); // parent=>menu_bar 
     lv_obj_add_flag(parent, LV_OBJ_FLAG_HIDDEN);
-    mda_statusbar_notify(1, "AI助手");
+    mda_statusbar_set_mode(MDA_STATUSBAR_SUBPAGE, "AI助手");
 
     // 切换页面
     mda_page_t *active_page = (mda_page_t *)lv_event_get_user_data(e);

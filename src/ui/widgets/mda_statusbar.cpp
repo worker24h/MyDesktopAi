@@ -15,25 +15,10 @@
 #define TIME_WIFI_REFRESH_MS 1000   // 时间&wifi刷新时间
 #define BATTERY_REFRESH_MS 2000     // 电量刷新间隔
 
-static lv_subject_t subject_status_bar; // 订阅对象
-static lv_obj_t *time_label = nullptr;
-static lv_obj_t *return_btn_flex = nullptr;
-static lv_obj_t *s_title_label = nullptr;
+static lv_obj_t *time_label = nullptr;      // 根页面：时间
+static lv_obj_t *return_btn = nullptr;      // 二级页面：返回按钮
+static lv_obj_t *s_title_label = nullptr;   // 二级页面：页面标题
 static const mda_pages_t *s_pages_ptr = nullptr;
-
-// 混合标签，用于管理时间/返回按钮/文案
-typedef struct {
-    const char* label_id;
-    const char* label_name;
-    bool is_hidden;
-}mda_mixed_compoent;
-
-static mda_mixed_compoent compoents[4] = {
-    {"time_label", "", false},
-    {"return_btn", "", true},
-    {"ai_assistant", "AI助手",  true},
-    {"device_manager", "设备管理", true},
-};
 
 // lv_timer 回调：由 loop() 里的 lv_timer_handler() 定时调用
 static void mda_wifi_event_cb(lv_timer_t *timer) {
@@ -114,20 +99,16 @@ static void mda_timer_event_cb(lv_timer_t *timer) {
     return;
 }
 
-static lv_obj_t *mda_time_create(lv_obj_t *parent, mda_mixed_compoent compoent) {
+static lv_obj_t *mda_time_create(lv_obj_t *parent) {
     char buf[8] = {0};
     if (!mda_date_format_custom("%H:%M", buf, sizeof(buf))) {
         strncpy(buf, "--:--", 6);
     }
     lv_obj_t *label = lv_label_create(parent);
-    lv_obj_add_style(label, &st_text, 0);                                        // 颜色用 MDA_COLOR_INK
-    lv_obj_set_style_text_font(label, &font_num_13b, 0);                         // 粗体数字
+    lv_obj_add_style(label, &st_text, 0);
+    lv_obj_set_style_text_font(label, &font_num_13b, 0);
     lv_label_set_text(label, buf);
-    lv_obj_align(label, LV_ALIGN_LEFT_MID, 10, 0);
     lv_timer_create(mda_timer_event_cb, TIME_WIFI_REFRESH_MS, label);
-    if (compoent.is_hidden) {
-        lv_obj_add_flag(s_title_label, LV_OBJ_FLAG_HIDDEN);
-    }
     return label;
 }
 
@@ -139,19 +120,28 @@ static void return_btn_event_cb(lv_event_t *e) {
         if (s_pages_ptr->menu_bar) {
             lv_obj_remove_flag(s_pages_ptr->menu_bar, LV_OBJ_FLAG_HIDDEN);
         }
-        // 2. 切回上一次页面，恢复底部菜单栏图标高亮
+        // 2. 切回上一次页面
         if (s_pages_ptr->last_page) {
-            logger.info("statusbar", "s_pages_ptr->last_page=%p", s_pages_ptr->last_page);
             mda_switch_page(s_pages_ptr->last_page);
         }
     }
-    // 4. 状态栏恢复时间显示，隐藏返回按钮
-    mda_statusbar_notify(0);
+    // 3. 状态栏切回根模式：显时间，隐返回区
+    mda_statusbar_set_mode(MDA_STATUSBAR_ROOT);
 }
 
-static lv_obj_t *mda_return_create(lv_obj_t *parent,  mda_mixed_compoent compoent) {
-    // 返回按钮：设计稿 28x18，白色胶囊圆角 9px
-    lv_obj_t *btn = lv_button_create(parent);
+// 返回按钮容器（return_btn + title_label 横向 flex）
+static lv_obj_t *mda_return_area_create(lv_obj_t *parent) {
+    // 外层 flex 容器
+    lv_obj_t *flex = lv_obj_create(parent);
+    lv_obj_remove_style_all(flex);
+    lv_obj_set_size(flex, LV_SIZE_CONTENT, MAX_STATUSBAR_HEIGHT);
+    lv_obj_set_flex_flow(flex, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(flex, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(flex, 6, 0);
+    lv_obj_add_flag(flex, LV_OBJ_FLAG_HIDDEN); // 默认隐藏
+
+    // 返回按钮：28×18，白色胶囊，圆角 9px
+    lv_obj_t *btn = lv_button_create(flex);
     lv_obj_remove_style_all(btn);
     lv_obj_set_size(btn, 28, 18);
     lv_obj_set_style_radius(btn, 9, 0);
@@ -160,72 +150,41 @@ static lv_obj_t *mda_return_create(lv_obj_t *parent,  mda_mixed_compoent compoen
     lv_obj_set_ext_click_area(btn, 10);
     lv_obj_add_event_cb(btn, return_btn_event_cb, LV_EVENT_CLICKED, nullptr);
 
-    // 返回箭头图标 <
-    lv_obj_t *return_label = lv_label_create(btn);
-    lv_obj_add_style(return_label, &st_text, 0);   // 颜色用 MDA_COLOR_INK
-    lv_obj_set_style_text_font(return_label, &font_icon_20, 0);
-    lv_label_set_text(return_label, ICON_LEFT);
-    lv_obj_center(return_label);
-    if (compoent.is_hidden) {
-        lv_obj_add_flag(btn, LV_OBJ_FLAG_HIDDEN);
-    }
-    return btn;
-}
+    lv_obj_t *arrow = lv_label_create(btn);
+    lv_obj_add_style(arrow, &st_text, 0);
+    lv_obj_set_style_text_font(arrow, &font_icon_20, 0);
+    lv_label_set_text(arrow, ICON_LEFT);
+    lv_obj_center(arrow);
 
-static lv_obj_t *mda_title_create(lv_obj_t *parent,  mda_mixed_compoent compoent) {
-    // 页面标题文字
-    s_title_label = lv_label_create(parent);
-    lv_obj_add_style(s_title_label, &st_text2, 0);
+    // 页面标题（唯一的 title_label，set_mode 时更新文字）
+    s_title_label = lv_label_create(flex);
+    lv_obj_add_style(s_title_label, &st_text, 0);
     lv_obj_set_style_text_font(s_title_label, &font_cn_11b, 0);
-    lv_label_set_text(s_title_label, compoent.label_name);
-    if (compoent.is_hidden) {
-        lv_obj_add_flag(s_title_label, LV_OBJ_FLAG_HIDDEN);
-    }
-    return s_title_label;
+    lv_label_set_text(s_title_label, "");
+
+    return flex;
 }
 
-// 混合组件，时间，返回按钮，描述
-static void mda_mixed_compoents(lv_obj_t *parent) {
-    // 容器：横向排列，靠左垂直居中，左边距 10px 与时间对齐
-    lv_obj_t *flex_compoent = lv_obj_create(parent);
-    lv_obj_remove_style_all(flex_compoent);
-    lv_obj_set_size(flex_compoent, LV_SIZE_CONTENT, MAX_STATUSBAR_HEIGHT);
-    lv_obj_align(flex_compoent, LV_ALIGN_LEFT_MID, 10, 0);
-    lv_obj_set_flex_flow(flex_compoent, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(flex_compoent, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(flex_compoent, 6, 0);        // 按钮与文字间距 6px
-    //lv_obj_add_flag(flex_compoent, LV_OBJ_FLAG_HIDDEN);      // 默认不显示
-    //lv_obj_set_style_bg_color(flex_compoent, lv_color_hex(MDA_COLOR_BLUE), 0);
-    //lv_obj_set_style_bg_opa(flex_compoent, 255, 0);
+// 左上角复合区域：时间 / 返回区 互斥叠放（都附在同一父容器，各自独立显隐）
+static void mda_left_area_create(lv_obj_t *parent) {
+    time_label = mda_time_create(parent);
+    lv_obj_align(time_label, LV_ALIGN_LEFT_MID, 10, 0);
 
-    time_label = mda_time_create(flex_compoent, compoents[0]);
-    return_btn_flex = mda_return_create(flex_compoent, compoents[1]);
-    mda_title_create(flex_compoent, compoents[2]);
-    mda_title_create(flex_compoent, compoents[3]);
+    return_btn = mda_return_area_create(parent);
+    lv_obj_align(return_btn, LV_ALIGN_LEFT_MID, 10, 0);
 }
 
-static void mda_statusbar_observer_cb(lv_observer_t * observer, lv_subject_t * subject) {
-    LV_UNUSED(observer);
-    int32_t return_show = lv_subject_get_int(subject);
-    logger.info("statusbar", "observer: return_show=%d", return_show);
-    if (return_show == 1) {
-        lv_obj_add_flag(time_label, LV_OBJ_FLAG_HIDDEN);          // time设置隐藏
-        lv_obj_remove_flag(return_btn_flex, LV_OBJ_FLAG_HIDDEN);  // return_btn设置显示
+void mda_statusbar_set_mode(mda_statusbar_mode_t mode, const char *title) {
+    if (mode == MDA_STATUSBAR_SUBPAGE) {
+        if (title && s_title_label) {
+            lv_label_set_text(s_title_label, title);
+        }
+        lv_obj_add_flag(time_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_remove_flag(return_btn, LV_OBJ_FLAG_HIDDEN);
     } else {
-        lv_obj_remove_flag(time_label, LV_OBJ_FLAG_HIDDEN);       // time设置显示
-        lv_obj_add_flag(return_btn_flex, LV_OBJ_FLAG_HIDDEN);     // return_btn设置隐藏
+        lv_obj_remove_flag(time_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(return_btn, LV_OBJ_FLAG_HIDDEN);
     }
-}
-
-void mda_statusbar_notify(int32_t value, const char *title) {
-    if (title && s_title_label) {
-        lv_label_set_text(s_title_label, title);
-    }
-    lv_subject_set_int(&subject_status_bar, value);
-}
-
-void mda_statusbar_notify(int32_t value) {
-    mda_statusbar_notify(value, nullptr);
 }
 
 
@@ -239,13 +198,10 @@ lv_obj_t * mda_statusbar_create(const mda_pages_t *pages) {
     lv_obj_remove_flag(status_bar, LV_OBJ_FLAG_SCROLLABLE); // 不可拖动
     lv_obj_remove_flag(status_bar, LV_OBJ_FLAG_CLICKABLE);  // 不可点击
 
-    // 创建时间、Wi-Fi、和电量图标
-    mda_mixed_compoents(status_bar);
+    // 左上角复合区域：时间 / 返回区 互斥叠放
+    mda_left_area_create(status_bar);
     mda_wifi_create(status_bar);
     mda_battery_create(status_bar);
 
-    // 设置订阅
-    //lv_subject_init_int(&subject_status_bar, 0);
-    //lv_subject_add_observer(&subject_status_bar, mda_statusbar_observer_cb, NULL);
     return status_bar;
 }
