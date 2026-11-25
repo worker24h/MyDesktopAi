@@ -3,6 +3,7 @@
 #include "hal/mda_device.h"
 #include "mda_screens.h"
 #include "ui/mda_theme.h"
+#include "ui/mda_ui.h"
 #include "assets/fonts/mda_fonts.h"
 #include "ui/widgets/mda_robots.h"
 
@@ -138,7 +139,7 @@ static void mda_settings_list_create(lv_obj_t *parent) {
 }
 
 //订阅，回调函数
-static void mda_robot_observer_cb(lv_observer_t * observer, lv_subject_t * subject) {
+static void mda_robot_observer_cb(lv_observer_t* observer, lv_subject_t* subject) {
     // 机器人
     lv_obj_t *robot = (lv_obj_t *)lv_observer_get_user_data(observer);
     int32_t active_id = lv_subject_get_int(subject);
@@ -146,13 +147,13 @@ static void mda_robot_observer_cb(lv_observer_t * observer, lv_subject_t * subje
     lv_image_set_src(robot, actived_robot->image_m);
 }
 
-lv_obj_t *mda_settings_create() {
-    lv_obj_t *settings = lv_obj_create(NULL);
-    lv_obj_remove_flag(settings, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_style_bg_opa(settings, LV_OPA_TRANSP, 0);
+void mda_settings_create(mda_page_t& settings) {
+    lv_obj_t *setting = lv_obj_create(NULL);
+    lv_obj_remove_flag(setting, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_opa(setting, LV_OPA_TRANSP, 0);
 
     //右侧
-    lv_obj_t *right_card = lv_obj_create(settings);
+    lv_obj_t *right_card = lv_obj_create(setting);
     lv_obj_remove_style_all(right_card);
     lv_obj_add_style(right_card, &st_card, 0);
     lv_obj_set_pos(right_card, 114, 26);
@@ -163,7 +164,7 @@ lv_obj_t *mda_settings_create() {
     mda_settings_list_create(right_card);
 
     //左侧
-    lv_obj_t *left_robot = lv_obj_create(settings);
+    lv_obj_t *left_robot = lv_obj_create(setting);
     lv_obj_remove_style_all(left_robot);
     lv_obj_remove_flag(left_robot, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_pos(left_robot, 8, 28);
@@ -204,6 +205,8 @@ lv_obj_t *mda_settings_create() {
     lv_obj_add_style(sign_label, &st_text2, 0);
     lv_label_set_text(sign_label, "陪伴每一天～");
 
-    return settings;
+    settings.page = setting;
+    settings.type = page_settings;
+    return;
 }
 

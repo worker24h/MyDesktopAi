@@ -121,12 +121,13 @@ static void create_tiles(lv_obj_t *scr) {
     }
 }
 
-lv_obj_t *mda_home_create() {
+void mda_home_create(mda_page_t& home) {
     lv_obj_t *scr = lv_obj_create(NULL);
     no_scroll(scr);
     lv_obj_set_style_bg_opa(scr, LV_OPA_TRANSP, 0); //设置透明
     create_left(scr);
     create_tiles(scr);
-
-    return scr;
+    home.page = scr;
+    home.type = page_home;
+    return ;
 }

@@ -1,14 +1,12 @@
 #include <stdio.h>
+#include <mda_logger.h>
 #include "mda_menubar.h"
 #include "../mda_theme.h"
 #include "assets/fonts/mda_fonts.h"
 #include "mda_statusbar.h"
 
-static lv_obj_t *icon_actived = NULL; // 当前高亮的图标
-static lv_obj_t *icon_home;
-static lv_obj_t *icon_smile;
-static lv_obj_t *icon_mic;
-static lv_obj_t *icon_settings;
+static mda_pages_t *mda_pages_ptr;
+static lv_obj_t *icon_actived;
 
 /**
  * 创建一个菜单图标。位置由父容器的 flex 布局决定，这里不用 lv_obj_align
@@ -24,51 +22,70 @@ static lv_obj_t *mda_menubar_icon_create(lv_obj_t *parent, const char *icon) {
     return label;
 }
 
-
-static void mda_menubar_icon_set_active(lv_event_t *e) {
-    lv_obj_t *icon = lv_event_get_current_target_obj(e);
-    mda_pages_t *pages = (mda_pages_t *)lv_event_get_user_data(e);
-    if (icon == icon_actived) {
-        return;    // 点的就是当前页
-    }
-
-    // 1. 先找出目标页面
-    lv_obj_t *target = nullptr;
-    if (icon == icon_home) {
-        target = pages->home;
-    } else if (icon == icon_smile) {
-        target = pages->smile;
-    } else if (icon == icon_mic) {
-        target = pages->mic;
-    } else if (icon == icon_settings) {
-        target = pages->settings;
-    } else {
-        return;
-    }
-
-    // 如果是mic则将menubar，statusbar设置成隐藏
-    if (icon == icon_mic) {
-        lv_obj_add_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
-        //将return btn设置显示，时间设置隐藏
-        mda_statusbar_notify(1, "AI助手");
-    } else {
-        lv_obj_remove_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
-        //将return btn设置隐藏，时间设置显示
-        mda_statusbar_notify(0);
-    }
-
-    // 3. 页面存在：先切高亮，再切页面
+void mda_switch_page(mda_page_t *active_page) {
+    lv_obj_t *icon = active_page->icon;
     lv_obj_set_style_text_color(icon_actived, lv_color_hex(MDA_COLOR_NAV_OFF), 0);    // 上一个恢复默认颜色
-    lv_obj_set_style_text_color(icon, lv_color_hex(MDA_COLOR_PINK), 0);
+    lv_obj_set_style_text_color(icon, lv_color_hex(MDA_COLOR_PINK), 0);  // 当前页高亮
+
     //动画效果切换页面
     lv_screen_load_anim_t anim = (lv_obj_get_index(icon) > lv_obj_get_index(icon_actived))
                              ? LV_SCR_LOAD_ANIM_MOVE_LEFT
                              : LV_SCR_LOAD_ANIM_MOVE_RIGHT;
-    lv_screen_load_anim(target, anim, 300, 0, false);
+    lv_screen_load_anim(active_page->page, anim, 300, 0, false);
     icon_actived = icon;
 }
 
+static void mda_menubar_common_actived(lv_event_t *e) {
+    lv_obj_t *icon = lv_event_get_current_target_obj(e);
+    if (icon == icon_actived) {
+        return;    // 就在当前页，忽略
+    }
+    if (mda_pages_ptr->home.icon == icon_actived) {
+        mda_pages_ptr->last_page = &(mda_pages_ptr->home);
+        logger.info("statusbar", "1 mda_pages_ptr->last_page=0x%p", mda_pages_ptr->last_page);
+    } else if (mda_pages_ptr->smile.icon == icon_actived) {
+        mda_pages_ptr->last_page = &(mda_pages_ptr->smile); 
+        logger.info("statusbar", "2 mda_pages_ptr->last_page=0x%p", mda_pages_ptr->last_page);
+    } else if (mda_pages_ptr->settings.icon == icon_actived) {
+        mda_pages_ptr->last_page = &(mda_pages_ptr->settings);
+        logger.info("statusbar", "3 mda_pages_ptr->last_page=0x%p", mda_pages_ptr->last_page);
+    }
+    mda_page_t *active_page = (mda_page_t *)lv_event_get_user_data(e);
+    mda_switch_page(active_page);
+    //lv_obj_remove_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
+    //将return btn设置隐藏，时间设置显示
+    //mda_statusbar_notify(0);
+}
+
+// chat页面单独处理
+static void mda_menubar_chat_icon_actived(lv_event_t *e) {
+    lv_obj_t *icon = lv_event_get_current_target_obj(e);
+    if (icon == icon_actived) {
+        return;    // 点的就是当前页
+    }
+    if (mda_pages_ptr->home.icon == icon_actived) {
+        mda_pages_ptr->last_page = &(mda_pages_ptr->home);
+    } else if (mda_pages_ptr->smile.icon == icon_actived) {
+        mda_pages_ptr->last_page = &(mda_pages_ptr->smile);
+    } else if (mda_pages_ptr->settings.icon == icon_actived) {
+        mda_pages_ptr->last_page = &(mda_pages_ptr->settings);
+    }
+    /**
+     * 需要将menu_bar隐藏，换成声音btn
+     * 将return btn设置显示，时间设置隐藏
+     */ 
+    lv_obj_t *parent = lv_obj_get_parent(icon); // parent=>menu_bar 
+    lv_obj_add_flag(parent, LV_OBJ_FLAG_HIDDEN);
+    mda_statusbar_notify(1, "AI助手");
+
+    // 切换页面
+    mda_page_t *active_page = (mda_page_t *)lv_event_get_user_data(e);
+    mda_switch_page(active_page);
+}
+
+
 lv_obj_t *mda_menubar_create(mda_pages_t *pages) {
+    mda_pages_ptr = pages;
     // 放在 top 层：盖在所有页面上面，切页面不用重建；放 bottom 层会被页面挡住，点击也收不到
     lv_obj_t *menubar = lv_obj_create(lv_layer_top());
     lv_obj_remove_style_all(menubar);                        // 去掉默认主题的白底、边框、内边距
@@ -83,29 +100,26 @@ lv_obj_t *mda_menubar_create(mda_pages_t *pages) {
     lv_obj_set_flex_flow(menubar, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(menubar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    icon_home = mda_menubar_icon_create(menubar, ICON_HOME);
+    lv_obj_t *icon_home = mda_menubar_icon_create(menubar, ICON_HOME);
     lv_obj_set_style_text_color(icon_home, lv_color_hex(MDA_COLOR_PINK), 0);  // 当前页高亮
-    lv_obj_add_event_cb(icon_home, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
+    lv_obj_add_event_cb(icon_home, mda_menubar_common_actived, LV_EVENT_CLICKED, &(mda_pages_ptr->home));
+    mda_pages_ptr->home.icon = icon_home;
     icon_actived = icon_home;
 
-    icon_smile = mda_menubar_icon_create(menubar, ICON_SMILE);
-    lv_obj_add_event_cb(icon_smile, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
+    lv_obj_t *icon_smile = mda_menubar_icon_create(menubar, ICON_SMILE);
+    lv_obj_add_event_cb(icon_smile, mda_menubar_common_actived, LV_EVENT_CLICKED, &(mda_pages_ptr->smile));
+    mda_pages_ptr->smile.icon = icon_smile;
 
-    icon_mic = mda_menubar_icon_create(menubar, ICON_MIC);
-    lv_obj_add_event_cb(icon_mic, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
+    lv_obj_t *icon_chat = mda_menubar_icon_create(menubar, ICON_MIC);
+    lv_obj_add_event_cb(icon_chat, mda_menubar_chat_icon_actived, LV_EVENT_CLICKED, &(mda_pages_ptr->chat));
+    mda_pages_ptr->chat.icon = icon_chat;
 
-    icon_settings = mda_menubar_icon_create(menubar, ICON_SETTINGS);
-    lv_obj_add_event_cb(icon_settings, mda_menubar_icon_set_active, LV_EVENT_CLICKED, pages);
+    lv_obj_t *icon_settings = mda_menubar_icon_create(menubar, ICON_SETTINGS);
+    lv_obj_add_event_cb(icon_settings, mda_menubar_common_actived, LV_EVENT_CLICKED, &(mda_pages_ptr->settings));
+    mda_pages_ptr->settings.icon = icon_settings;
 
     return menubar;
 }
 
-void mda_menubar_set_active_home() {
-    if (icon_actived && icon_home) {
-        lv_obj_set_style_text_color(icon_actived, lv_color_hex(MDA_COLOR_NAV_OFF), 0);
-        lv_obj_set_style_text_color(icon_home, lv_color_hex(MDA_COLOR_PINK), 0);
-        icon_actived = icon_home;
-    }
-}
 
 

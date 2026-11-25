@@ -7,7 +7,7 @@
 // pages 必须一直有效（传静态变量的地址），点击图标时会读取里面的页面
 lv_obj_t *mda_menubar_create(mda_pages_t *pages);
 
-// 恢复首页高亮状态
-void mda_menubar_set_active_home();
+// 切换页面, icon高亮状态
+void mda_switch_page(mda_page_t *active_page);
 
 #endif

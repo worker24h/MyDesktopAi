@@ -24,11 +24,12 @@ void ui_init() {
     s_pages.status_bar = status_bar;
     
     // 4. 创建页面
-    s_pages.home = mda_home_create();
-    s_pages.smile = mda_faces_create();
-    s_pages.mic = mda_chat_create();
-    s_pages.settings = mda_settings_create();
-    lv_screen_load(s_pages.home);
+    mda_home_create(s_pages.home);
+    mda_smile_create(s_pages.smile);
+    mda_chat_create(s_pages.chat);
+    mda_settings_create(s_pages.settings);
+    lv_screen_load(s_pages.home.page);
+    s_pages.last_page = &(s_pages.home); // 默认
 
     // 5. 底部菜单栏：放在 lv_layer_top，所有根页面共用
     s_pages.menu_bar = mda_menubar_create(&s_pages);
