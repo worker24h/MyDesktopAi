@@ -20,7 +20,7 @@ void ui_init() {
     lv_obj_set_pos(bg, 0, 0);
 
     // 3. 顶部状态栏：时间、电量、WiFi 等
-    lv_obj_t *status_bar = mda_statusbar_create();
+    lv_obj_t *status_bar = mda_statusbar_create(&s_pages);
     s_pages.status_bar = status_bar;
     
     // 4. 创建页面

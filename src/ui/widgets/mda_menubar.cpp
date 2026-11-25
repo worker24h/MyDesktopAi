@@ -50,7 +50,7 @@ static void mda_menubar_icon_set_active(lv_event_t *e) {
     if (icon == icon_mic) {
         lv_obj_add_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
         //将return btn设置显示，时间设置隐藏
-        mda_statusbar_notify(1);
+        mda_statusbar_notify(1, "AI助手");
     } else {
         lv_obj_remove_flag(pages->menu_bar, LV_OBJ_FLAG_HIDDEN);
         //将return btn设置隐藏，时间设置显示
@@ -99,4 +99,13 @@ lv_obj_t *mda_menubar_create(mda_pages_t *pages) {
 
     return menubar;
 }
+
+void mda_menubar_set_active_home() {
+    if (icon_actived && icon_home) {
+        lv_obj_set_style_text_color(icon_actived, lv_color_hex(MDA_COLOR_NAV_OFF), 0);
+        lv_obj_set_style_text_color(icon_home, lv_color_hex(MDA_COLOR_PINK), 0);
+        icon_actived = icon_home;
+    }
+}
+
 
