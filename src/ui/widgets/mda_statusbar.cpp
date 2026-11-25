@@ -8,6 +8,7 @@
 #include "mda_ntp.h"
 #include "mda_statusbar.h"
 #include "mda_network.h"
+#include "mda_logger.h"
 
 #define MAX_STATUSBAR_HEIGHT 22
 #define TIME_WIFI_REFRESH_MS 1000   // 时间&wifi刷新时间
@@ -123,18 +124,21 @@ static void return_btn_event_cb(lv_event_t *e) {
 static lv_obj_t *mda_return_create(lv_obj_t *parent) {
     lv_obj_t *flex = lv_obj_create(parent);
     lv_obj_remove_style_all(flex);
-    lv_obj_set_flex_flow(flex, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_size(flex, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(flex, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(flex, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    
+    lv_obj_add_flag(flex, LV_OBJ_FLAG_HIDDEN); //默认不显示
+
     lv_obj_t *btn = lv_button_create(flex);
     lv_obj_remove_style_all(btn);
+    lv_obj_set_ext_click_area(btn, 10);
     lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(btn, 15, 0);
     lv_obj_set_style_bg_color(btn, lv_color_hex(MDA_COLOR_WHITE), 0);
     lv_obj_set_size(btn, 30, 20);
     lv_obj_set_pos(btn, 5, 2);
     lv_obj_add_event_cb(btn, return_btn_event_cb, LV_EVENT_CLICKED, nullptr);
-    lv_obj_add_flag(btn, LV_OBJ_FLAG_HIDDEN); //默认不显示
+    
 
     lv_obj_t *return_label = lv_label_create(btn);
     lv_obj_add_style(return_label, &st_text, 0);   // 颜色用 MDA_COLOR_INK
@@ -151,9 +155,8 @@ static lv_obj_t *mda_return_create(lv_obj_t *parent) {
     return flex;
 }
 
-static void mda_robot_observer_cb(lv_observer_t * observer, lv_subject_t * subject) {
-    // 机器人
-    lv_obj_t *robot = (lv_obj_t *)lv_observer_get_user_data(observer);
+static void mda_statusbar_observer_cb(lv_observer_t * observer, lv_subject_t * subject) {
+    logger.info("statusbar", "hello");
     int32_t return_show = lv_subject_get_int(subject);
     if (return_show == 1) {
         lv_obj_add_flag(time_label, LV_OBJ_FLAG_HIDDEN); //time设置隐藏
@@ -183,7 +186,8 @@ lv_obj_t * mda_statusbar_create() {
     mda_battery_create(status_bar);
 
     //设置订阅
-    lv_subject_add_observer(&subject_status_bar, mda_robot_observer_cb, NULL);
+    lv_subject_init_int(&subject_status_bar, 0);
+    lv_subject_add_observer(&subject_status_bar, mda_statusbar_observer_cb, NULL);
     return status_bar;
 }
 
