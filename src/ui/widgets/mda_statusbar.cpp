@@ -140,14 +140,14 @@ static lv_obj_t *mda_return_area_create(lv_obj_t *parent) {
     lv_obj_set_style_pad_column(flex, 6, 0);
     lv_obj_add_flag(flex, LV_OBJ_FLAG_HIDDEN); // 默认隐藏
 
-    // 返回按钮：28×18，白色胶囊，圆角 9px
+    // 返回按钮：28×20，白色胶囊，圆角 9px
     lv_obj_t *btn = lv_button_create(flex);
     lv_obj_remove_style_all(btn);
-    lv_obj_set_size(btn, 28, 18);
+    lv_obj_set_size(btn, 28, 20);
     lv_obj_set_style_radius(btn, 9, 0);
     lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(btn, lv_color_hex(MDA_COLOR_WHITE), 0);
-    lv_obj_set_ext_click_area(btn, 10);
+    lv_obj_set_ext_click_area(btn, 15);
     lv_obj_add_event_cb(btn, return_btn_event_cb, LV_EVENT_CLICKED, nullptr);
 
     lv_obj_t *arrow = lv_label_create(btn);
